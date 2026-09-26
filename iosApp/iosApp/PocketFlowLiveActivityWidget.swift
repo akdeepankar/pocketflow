@@ -17,14 +17,14 @@ struct PocketFlowLiveActivityWidget: Widget {
                             .font(.system(size: 14, weight: .bold))
                             .foregroundColor(accentColorForNodeType(context.state.currentNodeType))
                         VStack(alignment: .leading, spacing: 1) {
-                            Text(context.state.nodeTitle)
+                            Text(context.state.workflowName)
                                 .font(.system(size: 13, weight: .bold))
                                 .foregroundColor(.white)
-                            if context.state.totalSteps > 1 {
-                                Text("Step \(context.state.currentStep) of \(context.state.totalSteps)")
-                                    .font(.system(size: 10, weight: .medium))
-                                    .foregroundColor(.gray)
-                            }
+                                .lineLimit(1)
+                            Text(context.state.nodeTitle)
+                                .font(.system(size: 10, weight: .medium))
+                                .foregroundColor(.gray)
+                                .lineLimit(1)
                         }
                     }
                     .padding(.leading, 8)
@@ -48,9 +48,11 @@ struct PocketFlowLiveActivityWidget: Widget {
                     }
                 }
                 DynamicIslandExpandedRegion(.center) {
-                    Text(context.state.workflowName)
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundColor(.gray)
+                    if context.state.totalSteps > 1 {
+                        Text("Step \(context.state.currentStep) of \(context.state.totalSteps)")
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundColor(.gray)
+                    }
                 }
                 DynamicIslandExpandedRegion(.bottom) {
                     VStack(alignment: .leading, spacing: 6) {
@@ -202,12 +204,14 @@ struct LockScreenLiveActivityView: View {
                 }
 
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(context.state.nodeTitle)
+                    Text(context.state.workflowName)
                         .font(.system(size: 15, weight: .bold))
                         .foregroundColor(.primary)
-                    Text(context.state.workflowName)
-                        .font(.system(size: 11, weight: .medium))
+                        .lineLimit(1)
+                    Text(context.state.nodeTitle)
+                        .font(.system(size: 12, weight: .medium))
                         .foregroundColor(.secondary)
+                        .lineLimit(1)
                 }
 
                 Spacer()
