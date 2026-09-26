@@ -68,6 +68,7 @@
 		B3E2A1221234567890ABCDEF /* LiveActivityManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveActivityManager.swift; sourceTree = "<group>"; };
 		B3E2A1241234567890ABCDEF /* PocketFlowLiveActivityWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PocketFlowLiveActivityWidget.swift; sourceTree = "<group>"; };
 		B3E2A1271234567890ABCDEF /* PocketFlowWidgets.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = PocketFlowWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		B3E2A1321234567890ABCDEF /* PocketFlowWidgets-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "PocketFlowWidgets-Info.plist"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -109,6 +110,7 @@
 				B3E2A1201234567890ABCDEF /* PocketFlowActivityAttributes.swift */,
 				B3E2A1221234567890ABCDEF /* LiveActivityManager.swift */,
 				B3E2A1241234567890ABCDEF /* PocketFlowLiveActivityWidget.swift */,
+				B3E2A1321234567890ABCDEF /* PocketFlowWidgets-Info.plist */,
 			);
 			path = iosApp;
 			sourceTree = "<group>";
@@ -459,11 +461,8 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = WPGR2YT685;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = PocketFlowWidgets;
-				INFOPLIST_KEY_NSExtensionPointIdentifier = "com.apple.widgetkit-extension";
-				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
-				INFOPLIST_KEY_NSSupportsLiveActivitiesFrequentUpdates = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = "iosApp/PocketFlowWidgets-Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -485,11 +484,8 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = WPGR2YT685;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = PocketFlowWidgets;
-				INFOPLIST_KEY_NSExtensionPointIdentifier = "com.apple.widgetkit-extension";
-				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
-				INFOPLIST_KEY_NSSupportsLiveActivitiesFrequentUpdates = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = "iosApp/PocketFlowWidgets-Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
