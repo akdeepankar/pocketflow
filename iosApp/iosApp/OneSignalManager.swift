@@ -59,6 +59,9 @@ import Shared
             object: nil
         )
         
+        // Register OneSignalBridge for KMP triggers and tags
+        OneSignalBridgeHolder.shared.current = self
+
         // Unpause in-app messages after a 2.0s delay to allow SwiftUI / UIKit window to become key and visible
         DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
             print("[OneSignal-iOS] Unpausing In-App Messages now that UI window is ready.")
@@ -195,5 +198,17 @@ import Shared
         guard let subId = subscriptionId, !subId.isEmpty, !subId.hasPrefix("local-") else { return }
         UserDefaults.standard.set(subId, forKey: "onesignal_subscription_id")
         print("[OneSignal-SDK] ✅ Registered server-assigned push subscription ID: \(subId)")
+    }
+}
+
+extension OneSignalManager: OneSignalBridge {
+    func addTrigger(key: String, value: String) {
+        OneSignal.InAppMessages.addTrigger(key, withValue: value)
+        print("[OneSignal-iOS] 🎯 Added InApp trigger: '\(key)' = '\(value)'")
+    }
+    
+    func addTag(key: String, value: String) {
+        OneSignal.User.addTag(key: key, value: value)
+        print("[OneSignal-iOS] 🏷️ Added User tag: '\(key)' = '\(value)'")
     }
 }

@@ -125,6 +125,7 @@ class WorkflowController {
             val jsonStr = app.ak25.pocketflow.storage.LocalStorage.loadString("workflows")
             if (jsonStr != null) {
                 _workflows.value = json.decodeFromString<List<Workflow>>(jsonStr)
+                updateWorkflowCountTriggers(_workflows.value.size)
             }
         } catch (e: Exception) {
             e.printStackTrace()
@@ -183,6 +184,7 @@ class WorkflowController {
         _workflows.value = merged
         // Persist merged result locally
         saveToLocal(merged)
+        updateWorkflowCountTriggers(merged.size)
         // Push any local-only workflows that aren't in cloud yet (includes
         // workflows created during a guest session) — owned by the logged-in user.
         merged.filter { it.id !in cloudIds }.forEach { wf ->
@@ -397,6 +399,22 @@ class WorkflowController {
             details = "Created workflow named '$name'",
             workflowName = name
         )
+        updateWorkflowCountTriggers(updated.size)
+    }
+
+    private fun updateWorkflowCountTriggers(count: Int) {
+        val countStr = count.toString()
+        app.ak25.pocketflow.platform.OneSignalBridgeHolder.current?.addTrigger("workflow_count", countStr)
+        app.ak25.pocketflow.platform.OneSignalBridgeHolder.current?.addTrigger("workflows_created", countStr)
+        app.ak25.pocketflow.platform.OneSignalBridgeHolder.current?.addTag("workflow_count", countStr)
+        app.ak25.pocketflow.platform.OneSignalBridgeHolder.current?.addTag("workflows_created", countStr)
+
+        if (count >= 3) {
+            app.ak25.pocketflow.platform.OneSignalBridgeHolder.current?.addTrigger("three_workflows_created", "true")
+            app.ak25.pocketflow.platform.OneSignalBridgeHolder.current?.addTrigger("created_3_workflows", "true")
+            app.ak25.pocketflow.platform.OneSignalBridgeHolder.current?.addTag("has_created_3_workflows", "true")
+            println("[OneSignal-IAM] 🎯 Triggered 'three_workflows_created' In-App Message condition (count=$count)")
+        }
     }
 
     fun loadWorkflow(workflowId: String) {

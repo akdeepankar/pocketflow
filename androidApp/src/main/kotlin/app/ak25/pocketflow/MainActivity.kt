@@ -94,6 +94,18 @@ class MainActivity : ComponentActivity() {
             println("[OneSignal-Android] 👤 User logged out from OneSignal")
         }
 
+        // Hook up OneSignalBridge for In-App Message triggers and User tags
+        app.ak25.pocketflow.platform.OneSignalBridgeHolder.current = object : app.ak25.pocketflow.platform.OneSignalBridge {
+            override fun addTrigger(key: String, value: String) {
+                OneSignal.InAppMessages.addTrigger(key, value)
+                println("[OneSignal-Android] 🎯 Added InApp trigger: '$key' = '$value'")
+            }
+            override fun addTag(key: String, value: String) {
+                OneSignal.User.addTag(key, value)
+                println("[OneSignal-Android] 🏷️ Added User tag: '$key' = '$value'")
+            }
+        }
+
         // Register the native Google Sign-in handler
         app.ak25.pocketflow.platform.AndroidAuthBridge.onGoogleSignIn = {
             launchNativeGoogleSignIn()
