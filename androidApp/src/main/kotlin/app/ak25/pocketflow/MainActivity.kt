@@ -66,6 +66,28 @@ class MainActivity : ComponentActivity() {
             }
         })
 
+        // Listen for In-App Message lifecycle events for diagnostics
+        OneSignal.InAppMessages.addLifecycleListener(object : com.onesignal.inAppMessages.IInAppMessageLifecycleListener {
+            override fun onWillDisplayInAppMessage(event: com.onesignal.inAppMessages.IInAppMessageWillDisplayEvent) {
+                println("[OneSignal-IAM-Android] 💬 In-App Message WILL display: messageId=${event.message.messageId}")
+            }
+            override fun onDidDisplayInAppMessage(event: com.onesignal.inAppMessages.IInAppMessageDidDisplayEvent) {
+                println("[OneSignal-IAM-Android] 📺 In-App Message DID display: messageId=${event.message.messageId}")
+            }
+            override fun onWillDismissInAppMessage(event: com.onesignal.inAppMessages.IInAppMessageWillDismissEvent) {
+                println("[OneSignal-IAM-Android] 🚪 In-App Message WILL dismiss: messageId=${event.message.messageId}")
+            }
+            override fun onDidDismissInAppMessage(event: com.onesignal.inAppMessages.IInAppMessageDidDismissEvent) {
+                println("[OneSignal-IAM-Android] ✅ In-App Message DID dismiss: messageId=${event.message.messageId}")
+            }
+        })
+
+        OneSignal.InAppMessages.addClickListener(object : com.onesignal.inAppMessages.IInAppMessageClickListener {
+            override fun onClick(event: com.onesignal.inAppMessages.IInAppMessageClickEvent) {
+                println("[OneSignal-IAM-Android] 👆 In-App Message clicked: actionId=${event.result.actionId}, urlTarget=${event.result.urlTarget}")
+            }
+        })
+
         // Evaluate immediately on initialization
         evaluateSubscription(OneSignal.User.pushSubscription.id)
 

@@ -4,7 +4,7 @@ import UserNotifications
 import OneSignalFramework
 import Shared
 
-@objc final class OneSignalManager: NSObject, OSPushSubscriptionObserver, OSNotificationLifecycleListener, OSNotificationClickListener {
+@objc final class OneSignalManager: NSObject, OSPushSubscriptionObserver, OSNotificationLifecycleListener, OSNotificationClickListener, OSInAppMessageLifecycleListener, OSInAppMessageClickListener {
     @objc static let shared = OneSignalManager()
     
     private let appId = "7090ae90-1a87-4702-8cfd-2694e44301d9"
@@ -33,6 +33,10 @@ import Shared
         
         // Listen for notification clicks and route deep links
         OneSignal.Notifications.addClickListener(self)
+
+        // Listen for In-App Message display events and clicks for diagnostics
+        OneSignal.InAppMessages.addLifecycleListener(self)
+        OneSignal.InAppMessages.addClickListener(self)
         
         // Auto-login existing user if session is already saved
         let storedUid = UserDefaults.standard.string(forKey: "supabase_user_id") ?? UserDefaults.standard.string(forKey: "appwrite_user_id")
@@ -40,7 +44,7 @@ import Shared
             OneSignal.login(storedUid)
             OneSignal.User.addAlias(label: "external_id", id: storedUid)
             OneSignal.User.pushSubscription.optIn()
-            print("OneSignal: Auto logged in stored user: \(storedUid)")
+            print("[OneSignal-iOS] 👤 Auto logged in stored user: \(storedUid)")
         }
         
         // Evaluate subscription state immediately
@@ -192,6 +196,28 @@ import Shared
                 DeepLinkRouter.shared.onNotificationClicked(workflowId: workflowId, nodeId: nodeId, type: type)
             }
         }
+    }
+
+    // OSInAppMessageLifecycleListener protocol methods
+    func onWillDisplayInAppMessage(event: OSInAppMessageWillDisplayEvent) {
+        print("[OneSignal-IAM-iOS] 💬 In-App Message WILL display: messageId=\(event.message.messageId)")
+    }
+    
+    func onDidDisplayInAppMessage(event: OSInAppMessageDidDisplayEvent) {
+        print("[OneSignal-IAM-iOS] 📺 In-App Message DID display: messageId=\(event.message.messageId)")
+    }
+    
+    func onWillDismissInAppMessage(event: OSInAppMessageWillDismissEvent) {
+        print("[OneSignal-IAM-iOS] 🚪 In-App Message WILL dismiss: messageId=\(event.message.messageId)")
+    }
+    
+    func onDidDismissInAppMessage(event: OSInAppMessageDidDismissEvent) {
+        print("[OneSignal-IAM-iOS] ✅ In-App Message DID dismiss: messageId=\(event.message.messageId)")
+    }
+    
+    // OSInAppMessageClickListener protocol method
+    func onClickInAppMessage(event: OSInAppMessageClickEvent) {
+        print("[OneSignal-IAM-iOS] 👆 In-App Message clicked: actionId=\(event.result.actionId ?? "nil"), urlTarget=\(event.result.urlTarget ?? "nil")")
     }
     
     private func evaluateSubscription(_ subscriptionId: String?) {

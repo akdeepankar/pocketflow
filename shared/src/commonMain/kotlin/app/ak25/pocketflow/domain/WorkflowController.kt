@@ -404,16 +404,34 @@ class WorkflowController {
 
     private fun updateWorkflowCountTriggers(count: Int) {
         val countStr = count.toString()
-        app.ak25.pocketflow.platform.OneSignalBridgeHolder.current?.addTrigger("workflow_count", countStr)
-        app.ak25.pocketflow.platform.OneSignalBridgeHolder.current?.addTrigger("workflows_created", countStr)
-        app.ak25.pocketflow.platform.OneSignalBridgeHolder.current?.addTag("workflow_count", countStr)
-        app.ak25.pocketflow.platform.OneSignalBridgeHolder.current?.addTag("workflows_created", countStr)
+        println("""
+        [OneSignal-IAM] ══════════════════════════════════════════════════
+        [OneSignal-IAM] 📊 Evaluating In-App Message Triggers
+        [OneSignal-IAM] Current Workflows Count: $count
+        [OneSignal-IAM] Setting Trigger: 'workflow_count' = '$countStr'
+        [OneSignal-IAM] Setting Trigger: 'workflows_created' = '$countStr'
+        """.trimIndent())
+        app.ak25.pocketflow.platform.OneSignalBridgeHolder.addTrigger("workflow_count", countStr)
+        app.ak25.pocketflow.platform.OneSignalBridgeHolder.addTrigger("workflows_created", countStr)
+        app.ak25.pocketflow.platform.OneSignalBridgeHolder.addTag("workflow_count", countStr)
+        app.ak25.pocketflow.platform.OneSignalBridgeHolder.addTag("workflows_created", countStr)
 
         if (count >= 3) {
-            app.ak25.pocketflow.platform.OneSignalBridgeHolder.current?.addTrigger("three_workflows_created", "true")
-            app.ak25.pocketflow.platform.OneSignalBridgeHolder.current?.addTrigger("created_3_workflows", "true")
-            app.ak25.pocketflow.platform.OneSignalBridgeHolder.current?.addTag("has_created_3_workflows", "true")
-            println("[OneSignal-IAM] 🎯 Triggered 'three_workflows_created' In-App Message condition (count=$count)")
+            println("""
+            [OneSignal-IAM] 🎯 Target Condition Satisfied (count >= 3)!
+            [OneSignal-IAM] Setting Trigger: 'three_workflows_created' = 'true'
+            [OneSignal-IAM] Setting Trigger: 'created_3_workflows' = 'true'
+            [OneSignal-IAM] Setting Tag: 'has_created_3_workflows' = 'true'
+            [OneSignal-IAM] ══════════════════════════════════════════════════
+            """.trimIndent())
+            app.ak25.pocketflow.platform.OneSignalBridgeHolder.addTrigger("three_workflows_created", "true")
+            app.ak25.pocketflow.platform.OneSignalBridgeHolder.addTrigger("created_3_workflows", "true")
+            app.ak25.pocketflow.platform.OneSignalBridgeHolder.addTag("has_created_3_workflows", "true")
+        } else {
+            println("""
+            [OneSignal-IAM] ℹ️ Waiting for 3 workflows (currently at $count/3).
+            [OneSignal-IAM] ══════════════════════════════════════════════════
+            """.trimIndent())
         }
     }
 
