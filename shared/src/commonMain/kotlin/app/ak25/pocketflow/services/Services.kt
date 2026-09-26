@@ -101,11 +101,11 @@ class ExecutionEngine(private val controller: WorkflowController) {
 
         // Start or update iOS Live Activity on Lock Screen & Dynamic Island
         try {
-            if (activityKey == null) {
+            if (activityKey == null || currentStep <= 1) {
                 app.ak25.pocketflow.storage.LocalStorage.startLiveActivity(
                     workflowId = workflow.id,
                     workflowName = workflow.name,
-                    nodeId = nodeId,
+                    nodeId = effectiveActivityKey,
                     nodeTitle = displayTitle,
                     nodeType = nodeTypeName,
                     currentStep = currentStep,
@@ -239,13 +239,13 @@ class ExecutionEngine(private val controller: WorkflowController) {
 
             // Update / End Live Activity on success
             try {
-                if (activityKey == null) {
+                if (activityKey == null || currentStep >= totalSteps) {
                     app.ak25.pocketflow.storage.LocalStorage.endLiveActivity(
-                        nodeId = nodeId,
+                        nodeId = effectiveActivityKey,
                         isSuccess = true,
-                        message = "$displayTitle Completed! ✓",
-                        completedSteps = 1,
-                        totalSteps = 1
+                        message = if (totalSteps > 1) "All $totalSteps nodes completed! ✓" else "$displayTitle Completed! ✓",
+                        completedSteps = totalSteps,
+                        totalSteps = totalSteps
                     )
                 } else {
                     app.ak25.pocketflow.storage.LocalStorage.updateLiveActivity(
