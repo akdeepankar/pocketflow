@@ -27,7 +27,6 @@ class StorageService {
 class ExecutionEngine(private val controller: WorkflowController) {
     val engineScope = kotlinx.coroutines.CoroutineScope(Dispatchers.Default + kotlinx.coroutines.SupervisorJob())
     private val runwayService = app.ak25.pocketflow.services.RunwayService()
-    private val tripoService = app.ak25.pocketflow.services.TripoService()
 
     fun isRunning(nodeId: String): Boolean = activeRuns.contains(nodeId)
 
@@ -143,14 +142,6 @@ class ExecutionEngine(private val controller: WorkflowController) {
         runwayService.onRemoteUrlGenerated = { url ->
             generatedRemoteUrls.add(url)
         }
-        tripoService.onRemoteUrlGenerated = { url ->
-            generatedRemoteUrls.add(url)
-        }
-        tripoService.onTaskIdGenerated = { taskId ->
-            latestJobId = taskId
-            controller.updateNodeParams(nodeId, "jobId", taskId)
-            controller.updateNodeStatus(nodeId, NodeStatus.RUNNING, jobId = taskId)
-        }
 
         val initialJobId = node.jobId ?: node.params["jobId"]
         var currentJobId = initialJobId
@@ -162,11 +153,7 @@ class ExecutionEngine(private val controller: WorkflowController) {
                 loopAttempt++
                 try {
                     outputResult = if (!currentJobId.isNullOrEmpty()) {
-                        if (node.type == NodeType.MODEL3D_GENERATION) {
-                            tripoService.imageTo3d(imageUri = "", existingTaskId = currentJobId)
-                        } else {
-                            runwayService.pollAndDownloadTask(currentJobId, node.type)
-                        }
+                        runwayService.pollAndDownloadTask(currentJobId, node.type)
                     } else {
                         executeNode(nodeId)
                     }
@@ -177,7 +164,6 @@ class ExecutionEngine(private val controller: WorkflowController) {
                     }
                     val msg = e.message ?: ""
                     val isExplicitFailure = msg.startsWith("Task failed:", ignoreCase = true) ||
-                        msg.startsWith("Tripo API Error:", ignoreCase = true) ||
                         msg.contains("timed out after", ignoreCase = true)
 
                     if (isExplicitFailure || (latestJobId.isNullOrEmpty() && loopAttempt >= 2)) {
@@ -309,8 +295,6 @@ class ExecutionEngine(private val controller: WorkflowController) {
             }
             runwayService.onTaskIdGenerated = null
             runwayService.onRemoteUrlGenerated = null
-            tripoService.onTaskIdGenerated = null
-            tripoService.onRemoteUrlGenerated = null
             activeRuns.remove(nodeId)
         }
     }
@@ -418,16 +402,7 @@ class ExecutionEngine(private val controller: WorkflowController) {
                 )
             }
             NodeType.MODEL3D_GENERATION -> {
-                var imageUri: String? = null
-                for (edge in edges.filter { it.targetNodeId == node.id && it.targetPortId == "image" }) {
-                    val sourceNode = workflow.nodes.find { it.id == edge.sourceNodeId }
-                    if (sourceNode != null) {
-                        imageUri = resolveNodeOutput(sourceNode)
-                        break
-                    }
-                }
-                if (imageUri.isNullOrEmpty()) throw Exception("No input image provided for 3D model generation")
-                tripoService.imageTo3d(imageUri)
+                throw Exception("3D Model Generation is not supported.")
             }
             NodeType.AD_LOCALIZATION -> {
                 var imageUri: String? = null
