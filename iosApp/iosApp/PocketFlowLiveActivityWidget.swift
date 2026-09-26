@@ -36,10 +36,15 @@ struct PocketFlowLiveActivityWidget: Widget {
                             .foregroundColor(context.state.isSuccess ? .green : .red)
                             .padding(.trailing, 8)
                     } else if context.state.totalSteps > 1 {
-                        Text("\(context.state.completedSteps)/\(context.state.totalSteps)")
-                            .font(.system(size: 13, weight: .bold, design: .rounded))
-                            .foregroundColor(accentColorForNodeType(context.state.currentNodeType))
-                            .padding(.trailing, 8)
+                        ZStack {
+                            ProgressView()
+                                .progressViewStyle(CircularProgressViewStyle(tint: accentColorForNodeType(context.state.currentNodeType)))
+                                .scaleEffect(0.95)
+                            Text("\(context.state.currentStep)/\(context.state.totalSteps)")
+                                .font(.system(size: 10, weight: .bold, design: .rounded))
+                                .foregroundColor(.white)
+                        }
+                        .padding(.trailing, 8)
                     } else {
                         ProgressView()
                             .progressViewStyle(CircularProgressViewStyle(tint: .white))
@@ -82,11 +87,6 @@ struct PocketFlowLiveActivityWidget: Widget {
                     Image(systemName: iconForNodeType(context.state.currentNodeType))
                         .font(.system(size: 12, weight: .bold))
                         .foregroundColor(accentColorForNodeType(context.state.currentNodeType))
-                    if context.state.totalSteps > 1 && !context.state.isFinished {
-                        Text("\(context.state.currentStep)/\(context.state.totalSteps)")
-                            .font(.system(size: 11, weight: .bold, design: .rounded))
-                            .foregroundColor(.white)
-                    }
                 }
                 .padding(.leading, 4)
             } compactTrailing: {
@@ -95,6 +95,16 @@ struct PocketFlowLiveActivityWidget: Widget {
                         .font(.system(size: 13, weight: .bold))
                         .foregroundColor(context.state.isSuccess ? .green : .red)
                         .padding(.trailing, 4)
+                } else if context.state.totalSteps > 1 {
+                    ZStack {
+                        ProgressView()
+                            .progressViewStyle(CircularProgressViewStyle(tint: accentColorForNodeType(context.state.currentNodeType)))
+                            .scaleEffect(0.72)
+                        Text("\(context.state.currentStep)/\(context.state.totalSteps)")
+                            .font(.system(size: 8, weight: .bold, design: .rounded))
+                            .foregroundColor(.white)
+                    }
+                    .padding(.trailing, 4)
                 } else {
                     ProgressView()
                         .progressViewStyle(CircularProgressViewStyle(tint: accentColorForNodeType(context.state.currentNodeType)))
@@ -107,9 +117,14 @@ struct PocketFlowLiveActivityWidget: Widget {
                         .font(.system(size: 12, weight: .semibold))
                         .foregroundColor(context.state.isSuccess ? .green : .red)
                 } else if context.state.totalSteps > 1 {
-                    Text("\(context.state.currentStep)/\(context.state.totalSteps)")
-                        .font(.system(size: 10, weight: .bold, design: .rounded))
-                        .foregroundColor(accentColorForNodeType(context.state.currentNodeType))
+                    ZStack {
+                        ProgressView()
+                            .progressViewStyle(CircularProgressViewStyle(tint: accentColorForNodeType(context.state.currentNodeType)))
+                            .scaleEffect(0.72)
+                        Text("\(context.state.currentStep)/\(context.state.totalSteps)")
+                            .font(.system(size: 8, weight: .bold, design: .rounded))
+                            .foregroundColor(.white)
+                    }
                 } else {
                     Image(systemName: iconForNodeType(context.state.currentNodeType))
                         .font(.system(size: 12, weight: .semibold))
@@ -150,13 +165,13 @@ struct StepProgressTickView: View {
                         } else if isCurrent {
                             ZStack {
                                 Circle()
-                                    .fill(accentColorForNodeType(nodeType).opacity(0.16))
-                                    .frame(width: compact ? 20 : 26, height: compact ? 20 : 26)
+                                    .fill(accentColorForNodeType(nodeType).opacity(0.18))
+                                    .frame(width: compact ? 18 : 24, height: compact ? 18 : 24)
                                 ProgressView()
                                     .progressViewStyle(CircularProgressViewStyle(tint: accentColorForNodeType(nodeType)))
-                                    .scaleEffect(compact ? 0.75 : 0.95)
+                                    .scaleEffect(compact ? 0.65 : 0.85)
                                 Image(systemName: iconForNodeType(nodeType))
-                                    .font(.system(size: compact ? 8 : 10, weight: .bold))
+                                    .font(.system(size: compact ? 7 : 9, weight: .bold))
                                     .foregroundColor(accentColorForNodeType(nodeType))
                             }
                         } else if isFinished && !isSuccess && index == completedSteps {
@@ -200,16 +215,11 @@ struct LockScreenLiveActivityView: View {
             // Header: Icon + Titles + Step Badge
             HStack(spacing: 10) {
                 ZStack {
-                    Circle()
+                    RoundedRectangle(cornerRadius: 10)
                         .fill(accentColorForNodeType(context.state.currentNodeType).opacity(0.18))
                         .frame(width: 38, height: 38)
-                    if !context.state.isFinished {
-                        ProgressView()
-                            .progressViewStyle(CircularProgressViewStyle(tint: accentColorForNodeType(context.state.currentNodeType)))
-                            .scaleEffect(1.15)
-                    }
                     Image(systemName: iconForNodeType(context.state.currentNodeType))
-                        .font(.system(size: 16, weight: .bold))
+                        .font(.system(size: 17, weight: .bold))
                         .foregroundColor(accentColorForNodeType(context.state.currentNodeType))
                 }
 
