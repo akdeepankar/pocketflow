@@ -81,6 +81,30 @@ class ExecutionEngine(private val controller: WorkflowController) {
         
         controller.updateNodeStatus(nodeId, NodeStatus.RUNNING)
 
+        val nodeTypeName = node.type.name
+        val friendlyName = when (nodeTypeName) {
+            "IMAGE_GENERATION" -> "Image"
+            "VIDEO_GENERATION" -> "Video"
+            "TEXT_TO_SPEECH" -> "Audio"
+            "AUDIO_GENERATION" -> "Audio"
+            "TEXT_GENERATION" -> "Text"
+            "MODEL3D_GENERATION" -> "3D Model"
+            else -> nodeTypeName.lowercase().replace("_", " ").replaceFirstChar { it.uppercase() }
+        }
+
+        // Start iOS Live Activity on Lock Screen & Dynamic Island
+        try {
+            app.ak25.pocketflow.storage.LocalStorage.startLiveActivity(
+                workflowId = workflow.id,
+                workflowName = workflow.name,
+                nodeId = nodeId,
+                nodeTitle = friendlyName,
+                nodeType = nodeTypeName
+            )
+        } catch (e: Exception) {
+            // ignore
+        }
+
         // Track the latest task ID so we can persist it
         var latestJobId: String? = node.jobId ?: node.params["jobId"]
 
@@ -141,6 +165,15 @@ class ExecutionEngine(private val controller: WorkflowController) {
                             jobId = latestJobId
                         )
                         println("[ExecutionEngine] Node $nodeId failed: ${e.message}")
+                        // End Live Activity on failure
+                        try {
+                            app.ak25.pocketflow.storage.LocalStorage.endLiveActivity(
+                                nodeId = nodeId,
+                                isSuccess = false,
+                                message = "Generation failed"
+                            )
+                        } catch (ex: Exception) {}
+
                         // Show Local Notification on failure
                         try {
                             val nodeTypeName = node.type.name
@@ -189,6 +222,15 @@ class ExecutionEngine(private val controller: WorkflowController) {
                 localPath = output,
                 jobId = latestJobId
             )
+
+            // End Live Activity on success
+            try {
+                app.ak25.pocketflow.storage.LocalStorage.endLiveActivity(
+                    nodeId = nodeId,
+                    isSuccess = true,
+                    message = "Completed"
+                )
+            } catch (e: Exception) {}
             
             // Show Local Notification instantly while in background or foreground
             try {
@@ -220,9 +262,23 @@ class ExecutionEngine(private val controller: WorkflowController) {
             true
         } catch (e: kotlinx.coroutines.CancellationException) {
             println("[ExecutionEngine] Node $nodeId execution cancelled.")
+            try {
+                app.ak25.pocketflow.storage.LocalStorage.endLiveActivity(
+                    nodeId = nodeId,
+                    isSuccess = false,
+                    message = "Cancelled"
+                )
+            } catch (ex: Exception) {}
             throw e
         } catch (e: Exception) {
             println("[ExecutionEngine] Node $nodeId unexpected error: ${e.message}")
+            try {
+                app.ak25.pocketflow.storage.LocalStorage.endLiveActivity(
+                    nodeId = nodeId,
+                    isSuccess = false,
+                    message = "Failed"
+                )
+            } catch (ex: Exception) {}
             false
         } finally {
             app.ak25.pocketflow.storage.LocalStorage.endBackgroundTask()

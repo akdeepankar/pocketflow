@@ -9,6 +9,9 @@ expect object LocalStorage {
     fun shareMedia(path: String): Boolean
     fun resolveLocalPath(path: String): String
     fun showLocalNotification(title: String, body: String, workflowId: String? = null, nodeId: String? = null)
+    fun startLiveActivity(workflowId: String, workflowName: String, nodeId: String, nodeTitle: String, nodeType: String)
+    fun updateLiveActivity(nodeId: String, status: String, progress: Double = -1.0, message: String = "", isFinished: Boolean = false, isSuccess: Boolean = false)
+    fun endLiveActivity(nodeId: String, isSuccess: Boolean = true, message: String = "")
     fun beginBackgroundTask(name: String = "generation")
     fun endBackgroundTask()
 }

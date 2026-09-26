@@ -64,6 +64,7 @@ struct iOSApp: App {
         bridge = AuthBridgeImpl(auth: authViewModel)
         // The shared Compose auth page delegates to AuthViewModel on iOS.
         AuthBridgeHolder.shared.current = bridge
+        LiveActivityBridgeHolder.shared.current = LiveActivityManager.shared
     }
 
     var body: some Scene {

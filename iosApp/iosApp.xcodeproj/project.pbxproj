@@ -14,6 +14,9 @@
 		B3E2A1171234567890ABCDEF /* AuthViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3E2A1181234567890ABCDEF /* AuthViewModel.swift */; };
 		B3E2A1191234567890ABCDEF /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3E2A11A1234567890ABCDEF /* LoginView.swift */; };
 		B3E2A11B1234567890ABCDEF /* AuthBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3E2A11C1234567890ABCDEF /* AuthBridge.swift */; };
+		B3E2A11F1234567890ABCDEF /* PocketFlowActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3E2A1201234567890ABCDEF /* PocketFlowActivityAttributes.swift */; };
+		B3E2A1211234567890ABCDEF /* LiveActivityManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3E2A1221234567890ABCDEF /* LiveActivityManager.swift */; };
+		B3E2A1231234567890ABCDEF /* PocketFlowLiveActivityWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3E2A1241234567890ABCDEF /* PocketFlowLiveActivityWidget.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -38,6 +41,9 @@
 		B3E2A1181234567890ABCDEF /* AuthViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthViewModel.swift; sourceTree = "<group>"; };
 		B3E2A11A1234567890ABCDEF /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
 		B3E2A11C1234567890ABCDEF /* AuthBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthBridge.swift; sourceTree = "<group>"; };
+		B3E2A1201234567890ABCDEF /* PocketFlowActivityAttributes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PocketFlowActivityAttributes.swift; sourceTree = "<group>"; };
+		B3E2A1221234567890ABCDEF /* LiveActivityManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveActivityManager.swift; sourceTree = "<group>"; };
+		B3E2A1241234567890ABCDEF /* PocketFlowLiveActivityWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PocketFlowLiveActivityWidget.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -69,6 +75,9 @@
 				B3E2A1181234567890ABCDEF /* AuthViewModel.swift */,
 				B3E2A11A1234567890ABCDEF /* LoginView.swift */,
 				B3E2A11C1234567890ABCDEF /* AuthBridge.swift */,
+				B3E2A1201234567890ABCDEF /* PocketFlowActivityAttributes.swift */,
+				B3E2A1221234567890ABCDEF /* LiveActivityManager.swift */,
+				B3E2A1241234567890ABCDEF /* PocketFlowLiveActivityWidget.swift */,
 			);
 			path = iosApp;
 			sourceTree = "<group>";
@@ -175,6 +184,9 @@
 				B3E2A1171234567890ABCDEF /* AuthViewModel.swift in Sources */,
 				B3E2A1191234567890ABCDEF /* LoginView.swift in Sources */,
 				B3E2A11B1234567890ABCDEF /* AuthBridge.swift in Sources */,
+				B3E2A11F1234567890ABCDEF /* PocketFlowActivityAttributes.swift in Sources */,
+				B3E2A1211234567890ABCDEF /* LiveActivityManager.swift in Sources */,
+				B3E2A1231234567890ABCDEF /* PocketFlowLiveActivityWidget.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -314,6 +326,8 @@
 				);
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CADisableMinimumFrameDurationOnPhone = YES;
+				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
+				INFOPLIST_KEY_NSSupportsLiveActivitiesFrequentUpdates = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -349,6 +363,8 @@
 				);
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CADisableMinimumFrameDurationOnPhone = YES;
+				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
+				INFOPLIST_KEY_NSSupportsLiveActivitiesFrequentUpdates = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;

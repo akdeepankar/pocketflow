@@ -147,6 +147,24 @@ actual object LocalStorage {
         platform.UserNotifications.UNUserNotificationCenter.currentNotificationCenter().addNotificationRequest(request) { _ -> }
     }
 
+    actual fun startLiveActivity(workflowId: String, workflowName: String, nodeId: String, nodeTitle: String, nodeType: String) {
+        app.ak25.pocketflow.platform.LiveActivityBridgeHolder.current?.startLiveActivity(
+            workflowId, workflowName, nodeId, nodeTitle, nodeType
+        )
+    }
+
+    actual fun updateLiveActivity(nodeId: String, status: String, progress: Double, message: String, isFinished: Boolean, isSuccess: Boolean) {
+        app.ak25.pocketflow.platform.LiveActivityBridgeHolder.current?.updateLiveActivity(
+            nodeId, status, progress, message, isFinished, isSuccess
+        )
+    }
+
+    actual fun endLiveActivity(nodeId: String, isSuccess: Boolean, message: String) {
+        app.ak25.pocketflow.platform.LiveActivityBridgeHolder.current?.endLiveActivity(
+            nodeId, isSuccess, message
+        )
+    }
+
     private var activeBgTaskId: platform.UIKit.UIBackgroundTaskIdentifier = platform.UIKit.UIBackgroundTaskInvalid
 
     actual fun beginBackgroundTask(name: String) {

@@ -199,6 +199,10 @@ actual object LocalStorage {
         }
     }
 
+    actual fun startLiveActivity(workflowId: String, workflowName: String, nodeId: String, nodeTitle: String, nodeType: String) {}
+    actual fun updateLiveActivity(nodeId: String, status: String, progress: Double, message: String, isFinished: Boolean, isSuccess: Boolean) {}
+    actual fun endLiveActivity(nodeId: String, isSuccess: Boolean, message: String) {}
+
     actual fun beginBackgroundTask(name: String) {
         // Android background execution is managed by ExecutionEngine.engineScope
     }
