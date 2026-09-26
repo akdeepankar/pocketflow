@@ -2,7 +2,6 @@ import SwiftUI
 import UserNotifications
 import Shared
 import OneSignalFramework
-import OneSignalLiveActivities
 
 class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate {
     func application(

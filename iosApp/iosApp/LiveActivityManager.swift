@@ -2,7 +2,6 @@ import Foundation
 import ActivityKit
 import Shared
 import OneSignalFramework
-import OneSignalLiveActivities
 
 @MainActor
 final class LiveActivityManager: NSObject, LiveActivityBridge {
