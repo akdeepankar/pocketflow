@@ -79,23 +79,27 @@ class RunwayService {
      *   2. If that fails (JWT absent, function not deployed), fall back to direct call.
      */
     private suspend fun runwayFetch(endpoint: String, body: JsonObject): JsonObject {
-        // ── Path 1: via Supabase Function (Server-side cloud background poller & OneSignal) ───
-        try {
-            val jobId = SupabaseRepository.invokeRunwayFunction(
-                endpoint = endpoint,
-                payload = body,
-                liveActivity = activeLiveActivityMetadata
-            )
-            if (jobId != null) {
-                onTaskIdGenerated?.invoke(jobId)
-                // Return a minimal JsonObject matching what callers expect
-                return kotlinx.serialization.json.buildJsonObject {
-                    put("id", JsonPrimitive(jobId))
-                    put("status", JsonPrimitive("PENDING"))
+        // ── Path 1: via Supabase Function ──────────────────────────────────────
+        val jwt = app.ak25.pocketflow.storage.LocalStorage.loadString("supabase_jwt")
+            ?: app.ak25.pocketflow.storage.LocalStorage.loadString("appwrite_jwt")
+        if (!jwt.isNullOrEmpty()) {
+            try {
+                val jobId = SupabaseRepository.invokeRunwayFunction(
+                    endpoint = endpoint,
+                    payload = body,
+                    liveActivity = activeLiveActivityMetadata
+                )
+                if (jobId != null) {
+                    onTaskIdGenerated?.invoke(jobId)
+                    // Return a minimal JsonObject matching what callers expect
+                    return kotlinx.serialization.json.buildJsonObject {
+                        put("id", JsonPrimitive(jobId))
+                        put("status", JsonPrimitive("PENDING"))
+                    }
                 }
+            } catch (e: Exception) {
+                println("[RunwayService] Supabase Function failed, falling back to direct call: ${e.message}")
             }
-        } catch (e: Exception) {
-            println("[RunwayService] Supabase Function failed, falling back to direct call: ${e.message}")
         }
 
         // ── Path 2: direct call fallback ───────────────────────────────────────

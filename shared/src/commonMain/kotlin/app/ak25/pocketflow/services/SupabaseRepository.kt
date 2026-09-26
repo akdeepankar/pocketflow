@@ -317,21 +317,19 @@ object SupabaseRepository {
                     put("recipientUserId", uid)
                 }
             }
-            println("[Supabase] Invoking runway-generate with endpoint: $endpoint, hasLiveActivity: ${liveActivity != null}")
-            val response = supabaseClient.functions.invoke("runway-generate", body)
+            val response = supabaseClient.functions.invoke("runway-generate", body.toString())
             val responseText = response.bodyAsText()
-            println("[Supabase] runway-generate response (${response.status}): $responseText")
             val parsed = json.parseToJsonElement(responseText).jsonObject
             if (parsed["success"]?.jsonPrimitive?.booleanOrNull == true) {
                 val jobId = parsed["jobId"]?.jsonPrimitive?.contentOrNull
                 println("[Supabase] ✅ Function returned jobId: $jobId")
                 jobId
             } else {
-                println("[Supabase] ❌ Function returned error: ${parsed["error"]}")
+                println("[Supabase] Function returned error: ${parsed["error"]}")
                 null
             }
         } catch (e: Exception) {
-            println("[Supabase] ❌ invokeRunwayFunction exception: ${e.message}")
+            println("[Supabase] invokeRunwayFunction exception: ${e.message}")
             null
         }
     }

@@ -2,6 +2,10 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>NSSupportsLiveActivities</key>
+	<true/>
+	<key>CFBundleIdentifier</key>
+	<string></string>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
 	<key>UIBackgroundModes</key>
@@ -10,7 +14,6 @@
 	</array>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>This app requires access to save generated photos and videos to your photo library.</string>
-	<!-- Supabase OAuth2 callback URL scheme -->
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>
