@@ -88,6 +88,20 @@ final class LiveActivityManager: NSObject, LiveActivityBridge {
         }
     }
 
+    @available(iOS 16.2, *)
+    private func findActivity(for key: String) -> Activity<PocketFlowActivityAttributes>? {
+        if let act = activeActivities[key] as? Activity<PocketFlowActivityAttributes> {
+            return act
+        }
+        if let act = Activity<PocketFlowActivityAttributes>.activities.first(where: {
+            $0.attributes.activityId == key || $0.attributes.workflowId == key
+        }) {
+            activeActivities[key] = act
+            return act
+        }
+        return nil
+    }
+
     func updateLiveActivity(
         nodeId: String,
         status: String,
@@ -102,7 +116,7 @@ final class LiveActivityManager: NSObject, LiveActivityBridge {
         nodeType: String
     ) {
         guard #available(iOS 16.2, *) else { return }
-        guard let activity = activeActivities[nodeId] as? Activity<PocketFlowActivityAttributes> else {
+        guard let activity = findActivity(for: nodeId) else {
             return
         }
 
@@ -151,9 +165,10 @@ final class LiveActivityManager: NSObject, LiveActivityBridge {
         totalSteps: Int32
     ) {
         guard #available(iOS 16.2, *) else { return }
-        guard let activity = activeActivities.removeValue(forKey: nodeId) as? Activity<PocketFlowActivityAttributes> else {
+        guard let activity = activeActivities.removeValue(forKey: nodeId) as? Activity<PocketFlowActivityAttributes> ?? findActivity(for: nodeId) else {
             return
         }
+        activeActivities.removeValue(forKey: nodeId)
 
         let finalStatus: String
         if isSuccess {

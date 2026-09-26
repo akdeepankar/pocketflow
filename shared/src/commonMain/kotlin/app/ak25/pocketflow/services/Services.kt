@@ -601,164 +601,177 @@ class ExecutionEngine(private val controller: WorkflowController) {
     suspend fun runWorkflow(onlyEmpty: Boolean = false): Boolean {
         cancelled = false
         val workflow = controller.currentWorkflow.value ?: return false
+        app.ak25.pocketflow.storage.LocalStorage.beginBackgroundTask("pocketflow_workflow_${workflow.id}")
         
-        val inDegree = mutableMapOf<String, Int>()
-        val adjList = mutableMapOf<String, MutableList<String>>()
-        
-        workflow.nodes.forEach { inDegree[it.id] = 0 }
-        workflow.edges.forEach {
-            inDegree[it.targetNodeId] = (inDegree[it.targetNodeId] ?: 0) + 1
-            adjList.getOrPut(it.sourceNodeId) { mutableListOf() }.add(it.targetNodeId)
-        }
-        
-        val queue = mutableListOf<String>()
-        inDegree.forEach { (id, deg) -> if (deg == 0) queue.add(id) }
-        
-        val sorted = mutableListOf<String>()
-        while (queue.isNotEmpty()) {
-            val current = queue.removeAt(0)
-            sorted.add(current)
+        return try {
+            val inDegree = mutableMapOf<String, Int>()
+            val adjList = mutableMapOf<String, MutableList<String>>()
             
-            adjList[current]?.forEach { neighbor ->
-                inDegree[neighbor] = (inDegree[neighbor] ?: 1) - 1
-                if (inDegree[neighbor] == 0) {
-                    queue.add(neighbor)
+            workflow.nodes.forEach { inDegree[it.id] = 0 }
+            workflow.edges.forEach {
+                inDegree[it.targetNodeId] = (inDegree[it.targetNodeId] ?: 0) + 1
+                adjList.getOrPut(it.sourceNodeId) { mutableListOf() }.add(it.targetNodeId)
+            }
+            
+            val queue = mutableListOf<String>()
+            inDegree.forEach { (id, deg) -> if (deg == 0) queue.add(id) }
+            
+            val sorted = mutableListOf<String>()
+            while (queue.isNotEmpty()) {
+                val current = queue.removeAt(0)
+                sorted.add(current)
+                
+                adjList[current]?.forEach { neighbor ->
+                    inDegree[neighbor] = (inDegree[neighbor] ?: 1) - 1
+                    if (inDegree[neighbor] == 0) {
+                        queue.add(neighbor)
+                    }
                 }
             }
-        }
-        
-        if (sorted.size != workflow.nodes.size) {
-            throw Exception("Cycle detected in workflow graph")
-        }
+            
+            if (sorted.size != workflow.nodes.size) {
+                throw Exception("Cycle detected in workflow graph")
+            }
 
-        val nodesMap = workflow.nodes.associateBy { it.id }
-        val nodesToRun = mutableListOf<String>()
-        val freshlyRunSet = mutableSetOf<String>()
+            val nodesMap = workflow.nodes.associateBy { it.id }
+            val nodesToRun = mutableListOf<String>()
+            val freshlyRunSet = mutableSetOf<String>()
 
-        if (onlyEmpty) {
-            for (nodeId in sorted) {
-                val node = nodesMap[nodeId] ?: continue
-                if (node.type == NodeType.TEXT_PROMPT) {
-                    nodesToRun.add(nodeId)
+            if (onlyEmpty) {
+                for (nodeId in sorted) {
+                    val node = nodesMap[nodeId] ?: continue
+                    if (node.type == NodeType.TEXT_PROMPT) {
+                        nodesToRun.add(nodeId)
+                        continue
+                    }
+                    val isEmptyOutput = node.outputUrl.isNullOrEmpty() || node.status != NodeStatus.COMPLETED
+                    val hasUpstreamReRun = workflow.edges.any { it.targetNodeId == nodeId && it.sourceNodeId in freshlyRunSet }
+                    if (isEmptyOutput || hasUpstreamReRun) {
+                        nodesToRun.add(nodeId)
+                        freshlyRunSet.add(nodeId)
+                    }
+                }
+            } else {
+                nodesToRun.addAll(sorted)
+            }
+
+            if (nodesToRun.isEmpty()) {
+                return true
+            }
+
+            // Mark all runnable nodes as PENDING upfront
+            for (nodeId in nodesToRun) {
+                val node = nodesMap[nodeId]
+                if (node?.type != NodeType.TEXT_PROMPT && node?.type != NodeType.NOTE) {
+                    controller.updateNodeStatus(nodeId, NodeStatus.PENDING)
+                }
+            }
+
+            val genNodes = nodesToRun.mapNotNull { nodesMap[it] }.filter { it.type != NodeType.TEXT_PROMPT && it.type != NodeType.NOTE }
+            val totalSteps = genNodes.size
+            val stepTypes = genNodes.map { it.type.name }
+            val stepTypesJson = Json.encodeToString<List<String>>(stepTypes)
+
+            // Start workflow-wide Live Activity
+            if (totalSteps > 0) {
+                val firstNode = genNodes.first()
+                val firstFriendly = firstNode.params["title"] ?: when (firstNode.type.name) {
+                    "IMAGE_GENERATION" -> "Image"
+                    "VIDEO_GENERATION" -> "Video"
+                    "TEXT_TO_SPEECH" -> "Audio"
+                    "AUDIO_GENERATION" -> "Audio"
+                    "TEXT_GENERATION" -> "Text"
+                    "MODEL3D_GENERATION" -> "3D Model"
+                    else -> firstNode.type.name.lowercase().replace("_", " ").replaceFirstChar { it.uppercase() }
+                }
+                try {
+                    app.ak25.pocketflow.storage.LocalStorage.startLiveActivity(
+                        workflowId = workflow.id,
+                        workflowName = workflow.name,
+                        nodeId = workflow.id,
+                        nodeTitle = firstFriendly,
+                        nodeType = firstNode.type.name,
+                        currentStep = 1,
+                        totalSteps = totalSteps,
+                        stepNodeTypesJson = stepTypesJson
+                    )
+                } catch (e: Exception) {}
+            }
+
+            var completedCount = 0
+            for (nodeId in nodesToRun) {
+                if (cancelled) {
+                    if (totalSteps > 0) {
+                        try {
+                            app.ak25.pocketflow.storage.LocalStorage.endLiveActivity(
+                                nodeId = workflow.id,
+                                isSuccess = false,
+                                message = "Cancelled",
+                                completedSteps = completedCount,
+                                totalSteps = totalSteps
+                            )
+                        } catch (e: Exception) {}
+                    }
+                    return false
+                }
+                val node = nodesMap[nodeId]
+                if (node?.type == NodeType.TEXT_PROMPT || node?.type == NodeType.NOTE) {
                     continue
                 }
-                val isEmptyOutput = node.outputUrl.isNullOrEmpty() || node.status != NodeStatus.COMPLETED
-                val hasUpstreamReRun = workflow.edges.any { it.targetNodeId == nodeId && it.sourceNodeId in freshlyRunSet }
-                if (isEmptyOutput || hasUpstreamReRun) {
-                    nodesToRun.add(nodeId)
-                    freshlyRunSet.add(nodeId)
-                }
-            }
-        } else {
-            nodesToRun.addAll(sorted)
-        }
-
-        if (nodesToRun.isEmpty()) {
-            return true
-        }
-
-        val genNodes = nodesToRun.mapNotNull { nodesMap[it] }.filter { it.type != NodeType.TEXT_PROMPT && it.type != NodeType.NOTE }
-        val totalSteps = genNodes.size
-        val stepTypes = genNodes.map { it.type.name }
-        val stepTypesJson = Json.encodeToString<List<String>>(stepTypes)
-
-        // Start workflow-wide Live Activity
-        if (totalSteps > 0) {
-            val firstNode = genNodes.first()
-            val firstFriendly = firstNode.params["title"] ?: when (firstNode.type.name) {
-                "IMAGE_GENERATION" -> "Image"
-                "VIDEO_GENERATION" -> "Video"
-                "TEXT_TO_SPEECH" -> "Audio"
-                "AUDIO_GENERATION" -> "Audio"
-                "TEXT_GENERATION" -> "Text"
-                "MODEL3D_GENERATION" -> "3D Model"
-                else -> firstNode.type.name.lowercase().replace("_", " ").replaceFirstChar { it.uppercase() }
-            }
-            try {
-                app.ak25.pocketflow.storage.LocalStorage.startLiveActivity(
-                    workflowId = workflow.id,
-                    workflowName = workflow.name,
-                    nodeId = workflow.id,
-                    nodeTitle = firstFriendly,
-                    nodeType = firstNode.type.name,
-                    currentStep = 1,
+                val stepIndex = genNodes.indexOfFirst { it.id == nodeId } + 1
+                val success = runNode(
+                    nodeId = nodeId,
+                    currentStep = if (stepIndex > 0) stepIndex else (completedCount + 1),
                     totalSteps = totalSteps,
-                    stepNodeTypesJson = stepTypesJson
+                    completedSteps = completedCount,
+                    activityKey = workflow.id,
+                    stepNodeTypes = stepTypes
                 )
-            } catch (e: Exception) {}
-        }
+                if (!success) {
+                    if (totalSteps > 0) {
+                        try {
+                            app.ak25.pocketflow.storage.LocalStorage.endLiveActivity(
+                                nodeId = workflow.id,
+                                isSuccess = false,
+                                message = "Generation failed",
+                                completedSteps = completedCount,
+                                totalSteps = totalSteps
+                            )
+                        } catch (e: Exception) {}
+                    }
+                    return false
+                }
+                completedCount++
+            }
+            
+            // Finalize Live Activity for the overall workflow
+            if (totalSteps > 0) {
+                try {
+                    app.ak25.pocketflow.storage.LocalStorage.endLiveActivity(
+                        nodeId = workflow.id,
+                        isSuccess = true,
+                        message = "All $totalSteps nodes completed! ✓",
+                        completedSteps = totalSteps,
+                        totalSteps = totalSteps
+                    )
+                } catch (e: Exception) {}
+            }
 
-        var completedCount = 0
-        for (nodeId in nodesToRun) {
-            if (cancelled) {
-                if (totalSteps > 0) {
-                    try {
-                        app.ak25.pocketflow.storage.LocalStorage.endLiveActivity(
-                            nodeId = workflow.id,
-                            isSuccess = false,
-                            message = "Cancelled",
-                            completedSteps = completedCount,
-                            totalSteps = totalSteps
-                        )
-                    } catch (e: Exception) {}
-                }
-                return false
-            }
-            val node = nodesMap[nodeId]
-            if (node?.type == NodeType.TEXT_PROMPT || node?.type == NodeType.NOTE) {
-                continue
-            }
-            val stepIndex = genNodes.indexOfFirst { it.id == nodeId } + 1
-            val success = runNode(
-                nodeId = nodeId,
-                currentStep = if (stepIndex > 0) stepIndex else (completedCount + 1),
-                totalSteps = totalSteps,
-                completedSteps = completedCount,
-                activityKey = workflow.id,
-                stepNodeTypes = stepTypes
-            )
-            if (!success) {
-                if (totalSteps > 0) {
-                    try {
-                        app.ak25.pocketflow.storage.LocalStorage.endLiveActivity(
-                            nodeId = workflow.id,
-                            isSuccess = false,
-                            message = "Generation failed",
-                            completedSteps = completedCount,
-                            totalSteps = totalSteps
-                        )
-                    } catch (e: Exception) {}
-                }
-                return false
-            }
-            completedCount++
-        }
-        
-        // Finalize Live Activity for the overall workflow
-        if (totalSteps > 0) {
+            // Show Local Notification instantly
             try {
-                app.ak25.pocketflow.storage.LocalStorage.endLiveActivity(
-                    nodeId = workflow.id,
-                    isSuccess = true,
-                    message = "All $totalSteps nodes completed! ✓",
-                    completedSteps = totalSteps,
-                    totalSteps = totalSteps
+                app.ak25.pocketflow.storage.LocalStorage.showLocalNotification(
+                    title = "Workflow Completed",
+                    body = "Your workflow '${workflow.name}' has finished generation successfully!",
+                    workflowId = workflow.id
                 )
-            } catch (e: Exception) {}
-        }
+            } catch (e: Exception) {
+                // ignore
+            }
 
-        // Show Local Notification instantly
-        try {
-            app.ak25.pocketflow.storage.LocalStorage.showLocalNotification(
-                title = "Workflow Completed",
-                body = "Your workflow '${workflow.name}' has finished generation successfully!",
-                workflowId = workflow.id
-            )
-        } catch (e: Exception) {
-            // ignore
+            true
+        } finally {
+            app.ak25.pocketflow.storage.LocalStorage.endBackgroundTask()
         }
-
-        return true
     }
 }
 
