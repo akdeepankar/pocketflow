@@ -22,41 +22,7 @@ export default {
       return Response.json({ success: false, error: "Invalid request body" }, { status: 400 });
     }
 
-    const { endpoint, payload, liveActivity, recipientUserId, action, activityId, pushToken } = body;
-
-    // Handle Live Activity push token registration
-    if (action === "register_token" || (activityId && pushToken)) {
-      const actId = activityId || liveActivity?.activityId;
-      const token = pushToken || liveActivity?.pushToken;
-      if (!actId || !token) {
-        return Response.json({ success: false, error: "Missing activityId or pushToken" }, { status: 400 });
-      }
-      if (!oneSignalRestKey) {
-        console.error("ONESIGNAL_REST_API_KEY environment variable is not set");
-        return Response.json({ success: false, error: "Server missing ONESIGNAL_REST_API_KEY" }, { status: 500 });
-      }
-
-      try {
-        console.log(`[OneSignal] Registering Live Activity token for: ${actId}`);
-        const regRes = await fetch(
-          `https://onesignal.com/api/v1/apps/${ONESIGNAL_APP_ID}/live_activities/${actId}/token`,
-          {
-            method: "POST",
-            headers: {
-              "Authorization": `Key ${oneSignalRestKey}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ push_token: token }),
-          }
-        );
-        const regData = await regRes.json().catch(() => ({}));
-        console.log(`[OneSignal] Token registration result: ${regRes.status}`, regData);
-        return Response.json({ success: regRes.ok, status: regRes.status, data: regData }, { status: regRes.status });
-      } catch (regErr) {
-        console.error(`[OneSignal] Token registration error:`, regErr);
-        return Response.json({ success: false, error: regErr.message }, { status: 500 });
-      }
-    }
+    const { endpoint, payload, liveActivity, recipientUserId } = body;
 
     if (!endpoint || !payload) {
       return Response.json({ success: false, error: "Missing 'endpoint' or 'payload' in request" }, { status: 400 });

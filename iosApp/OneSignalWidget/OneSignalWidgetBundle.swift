@@ -11,6 +11,7 @@ import SwiftUI
 @main
 struct OneSignalWidgetBundle: WidgetBundle {
     var body: some Widget {
+        PocketFlowLiveActivityWidget()
         OneSignalWidget()
         OneSignalWidgetControl()
         OneSignalWidgetLiveActivity()

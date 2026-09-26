@@ -1,9 +1,9 @@
 import Foundation
 import ActivityKit
 import Shared
-import OneSignalFramework
 
-final class LiveActivityManager: NSObject, LiveActivityBridge {
+@MainActor
+final class LiveActivityManager: NSObject, @preconcurrency LiveActivityBridge {
     static let shared = LiveActivityManager()
 
     private var activeActivities: [String: Any] = [:]
@@ -81,7 +81,7 @@ final class LiveActivityManager: NSObject, LiveActivityBridge {
                 for await pushToken in activity.pushTokenUpdates {
                     let tokenString = pushToken.map { String(format: "%02.2hhx", $0) }.joined()
                     print("[LiveActivity] 🔑 Push token generated: \(tokenString)")
-                    self.registerLiveActivityWithOneSignal(activityId: nodeId, pushToken: tokenString)
+                    await self.registerLiveActivityWithOneSignal(activityId: nodeId, pushToken: tokenString)
                 }
             }
         } catch {
@@ -89,11 +89,20 @@ final class LiveActivityManager: NSObject, LiveActivityBridge {
         }
     }
 
-    private func registerLiveActivityWithOneSignal(activityId: String, pushToken: String) {
-        OneSignal.LiveActivities.enter(activityId, withToken: pushToken) { result in
-            print("[LiveActivity] 📡 OneSignal Live Activity registered successfully for \(activityId), result: \(String(describing: result))")
-        } withFailure: { error in
-            print("[LiveActivity] ❌ Failed to register Live Activity token with OneSignal: \(String(describing: error))")
+    private func registerLiveActivityWithOneSignal(activityId: String, pushToken: String) async {
+        let appId = "7090ae90-1a87-4702-8cfd-2694e44301d9"
+        guard let url = URL(string: "https://onesignal.com/api/v1/apps/\(appId)/live_activities/\(activityId)/token") else { return }
+        var req = URLRequest(url: url)
+        req.httpMethod = "POST"
+        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        let body: [String: Any] = ["push_token": pushToken]
+        req.httpBody = try? JSONSerialization.data(withJSONObject: body)
+        do {
+            let (data, response) = try await URLSession.shared.data(for: req)
+            let status = (response as? HTTPURLResponse)?.statusCode ?? 0
+            print("[LiveActivity] 📡 OneSignal token registration status: \(status), resp: \(String(data: data, encoding: .utf8) ?? "")")
+        } catch {
+            print("[LiveActivity] ❌ Failed to register Live Activity token with OneSignal: \(error.localizedDescription)")
         }
     }
 

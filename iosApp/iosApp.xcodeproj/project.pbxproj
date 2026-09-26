@@ -12,7 +12,6 @@
 		37BF2E323068001B0010B71E /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 37BF2E313068001B0010B71E /* WidgetKit.framework */; };
 		37BF2E343068001B0010B71E /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 37BF2E333068001B0010B71E /* SwiftUI.framework */; };
 		37BF2E453068001C0010B71E /* OneSignalWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 37BF2E2F3068001B0010B71E /* OneSignalWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-		37BF2E4C3068009A0010B71E /* OneSignalFramework in Frameworks */ = {isa = PBXBuildFile; productRef = 37BF2E4B3068009A0010B71E /* OneSignalFramework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -93,7 +92,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				37BF2E343068001B0010B71E /* SwiftUI.framework in Frameworks */,
-				37BF2E4C3068009A0010B71E /* OneSignalFramework in Frameworks */,
 				37BF2E323068001B0010B71E /* WidgetKit.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -159,7 +157,6 @@
 			);
 			name = OneSignalWidgetExtension;
 			packageProductDependencies = (
-				37BF2E4B3068009A0010B71E /* OneSignalFramework */,
 			);
 			productName = OneSignalWidgetExtension;
 			productReference = 37BF2E2F3068001B0010B71E /* OneSignalWidgetExtension.appex */;
@@ -589,8 +586,8 @@
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/OneSignal/OneSignal-XCFramework";
 			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 5.0.0;
+				kind = exactVersion;
+				version = 5.5.4;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */
@@ -600,11 +597,6 @@
 			isa = XCSwiftPackageProductDependency;
 			package = F5E929AC4DF2B799E798492A /* XCRemoteSwiftPackageReference "OneSignal-XCFramework" */;
 			productName = OneSignalInAppMessages;
-		};
-		37BF2E4B3068009A0010B71E /* OneSignalFramework */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = F5E929AC4DF2B799E798492A /* XCRemoteSwiftPackageReference "OneSignal-XCFramework" */;
-			productName = OneSignalFramework;
 		};
 		F5E929AC4DF2B799E798492B /* OneSignalFramework */ = {
 			isa = XCSwiftPackageProductDependency;
