@@ -305,11 +305,3 @@ private func accentColorForNodeType(_ type: String) -> Color {
         return Color(red: 0.05, green: 0.65, blue: 0.98)
     }
 }
-
-@available(iOS 16.2, *)
-@main
-struct PocketFlowWidgetsBundle: WidgetBundle {
-    var body: some Widget {
-        PocketFlowLiveActivityWidget()
-    }
-}

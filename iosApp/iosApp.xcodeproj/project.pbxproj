@@ -3,213 +3,264 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 56;
+	objectVersion = 77;
 	objects = {
 
 /* Begin PBXBuildFile section */
-		B3E2A1001234567890ABCDEF /* iOSApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3E2A1011234567890ABCDEF /* iOSApp.swift */; };
-		B3E2A1021234567890ABCDEF /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3E2A1031234567890ABCDEF /* ContentView.swift */; };
-		B3E2A1041234567890ABCDEF /* Shared.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B3E2A1051234567890ABCDEF /* Shared.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
-		B3E2A1061234567890ABCDEF /* Shared.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = B3E2A1051234567890ABCDEF /* Shared.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
-		B3E2A1171234567890ABCDEF /* AuthViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3E2A1181234567890ABCDEF /* AuthViewModel.swift */; };
-		B3E2A1191234567890ABCDEF /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3E2A11A1234567890ABCDEF /* LoginView.swift */; };
-		B3E2A11B1234567890ABCDEF /* AuthBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3E2A11C1234567890ABCDEF /* AuthBridge.swift */; };
-		B3E2A11F1234567890ABCDEF /* PocketFlowActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3E2A1201234567890ABCDEF /* PocketFlowActivityAttributes.swift */; };
-		B3E2A1211234567890ABCDEF /* LiveActivityManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3E2A1221234567890ABCDEF /* LiveActivityManager.swift */; };
-		B3E2A1251234567890ABCDEF /* PocketFlowActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3E2A1201234567890ABCDEF /* PocketFlowActivityAttributes.swift */; };
-		B3E2A1261234567890ABCDEF /* PocketFlowLiveActivityWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3E2A1241234567890ABCDEF /* PocketFlowLiveActivityWidget.swift */; };
-		B3E2A1281234567890ABCDEF /* PocketFlowWidgets.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = B3E2A1271234567890ABCDEF /* PocketFlowWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		37A0748B2FFE551700C08AD7 /* OneSignalFramework in Frameworks */ = {isa = PBXBuildFile; productRef = F5E929AC4DF2B799E798492B /* OneSignalFramework */; };
+		37A0748B2FFE551700C08AE1 /* OneSignalInAppMessages in Frameworks */ = {isa = PBXBuildFile; productRef = 37A0748B2FFE551700C08AE0 /* OneSignalInAppMessages */; };
+		37BF2E323068001B0010B71E /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 37BF2E313068001B0010B71E /* WidgetKit.framework */; };
+		37BF2E343068001B0010B71E /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 37BF2E333068001B0010B71E /* SwiftUI.framework */; };
+		37BF2E453068001C0010B71E /* OneSignalWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 37BF2E2F3068001B0010B71E /* OneSignalWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		37BF2E4C3068009A0010B71E /* OneSignalFramework in Frameworks */ = {isa = PBXBuildFile; productRef = 37BF2E4B3068009A0010B71E /* OneSignalFramework */; };
+		AW1234AB2FFE551700C0AAAA /* Appwrite in Frameworks */ = {isa = PBXBuildFile; productRef = AW1234AB2FFE551700C0AAAB /* Appwrite */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
-		B3E2A12A1234567890ABCDEF /* PBXContainerItemProxy */ = {
+		37BF2E433068001C0010B71E /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
-			containerPortal = B3E2A1111234567890ABCDEF /* Project object */;
+			containerPortal = FB72DFB7D0C4D592D4F44BC0 /* Project object */;
 			proxyType = 1;
-			remoteGlobalIDString = B3E2A12C1234567890ABCDEF;
-			remoteInfo = PocketFlowWidgets;
+			remoteGlobalIDString = 37BF2E2E3068001B0010B71E;
+			remoteInfo = OneSignalWidgetExtension;
 		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
-		B3E2A1071234567890ABCDEF /* Embed Frameworks */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = "";
-			dstSubfolderSpec = 10;
-			files = (
-				B3E2A1061234567890ABCDEF /* Shared.framework in Embed Frameworks */,
-			);
-			name = "Embed Frameworks";
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		B3E2A1291234567890ABCDEF /* Embed App Extensions */ = {
+		37BF2E4A3068001C0010B71E /* Embed Foundation Extensions */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
 			dstPath = "";
 			dstSubfolderSpec = 13;
 			files = (
-				B3E2A1281234567890ABCDEF /* PocketFlowWidgets.appex in Embed App Extensions */,
+				37BF2E453068001C0010B71E /* OneSignalWidgetExtension.appex in Embed Foundation Extensions */,
 			);
-			name = "Embed App Extensions";
+			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		B3E2A1011234567890ABCDEF /* iOSApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iOSApp.swift; sourceTree = "<group>"; };
-		B3E2A1031234567890ABCDEF /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
-		B3E2A1051234567890ABCDEF /* Shared.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Shared.framework; path = "../shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)/Shared.framework"; sourceTree = "<group>"; };
-		B3E2A1081234567890ABCDEF /* iosApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = iosApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		B3E2A1181234567890ABCDEF /* AuthViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthViewModel.swift; sourceTree = "<group>"; };
-		B3E2A11A1234567890ABCDEF /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
-		B3E2A11C1234567890ABCDEF /* AuthBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthBridge.swift; sourceTree = "<group>"; };
-		B3E2A1201234567890ABCDEF /* PocketFlowActivityAttributes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PocketFlowActivityAttributes.swift; sourceTree = "<group>"; };
-		B3E2A1221234567890ABCDEF /* LiveActivityManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveActivityManager.swift; sourceTree = "<group>"; };
-		B3E2A1241234567890ABCDEF /* PocketFlowLiveActivityWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PocketFlowLiveActivityWidget.swift; sourceTree = "<group>"; };
-		B3E2A1271234567890ABCDEF /* PocketFlowWidgets.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = PocketFlowWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
-		B3E2A1321234567890ABCDEF /* PocketFlowWidgets-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "PocketFlowWidgets-Info.plist"; sourceTree = "<group>"; };
+		37BF2E2F3068001B0010B71E /* OneSignalWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = OneSignalWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		37BF2E313068001B0010B71E /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
+		37BF2E333068001B0010B71E /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
+		53508FC76E17421CA31DC4D0 /* PocketFlow.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PocketFlow.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		37BF2E493068001C0010B71E /* Exceptions for "OneSignalWidget" folder in "OneSignalWidgetExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 37BF2E2E3068001B0010B71E /* OneSignalWidgetExtension */;
+		};
+		E30B51658A38C0B5B2C3803F /* Exceptions for "iosApp" folder in "iosApp" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 4AB3CF0F42A97CA37E97723D /* iosApp */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		1C3278206FC5A0CE0C647777 /* iosApp */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				E30B51658A38C0B5B2C3803F /* Exceptions for "iosApp" folder in "iosApp" target */,
+			);
+			path = iosApp;
+			sourceTree = "<group>";
+		};
+		37BF2E353068001B0010B71E /* OneSignalWidget */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				37BF2E493068001C0010B71E /* Exceptions for "OneSignalWidget" folder in "OneSignalWidgetExtension" target */,
+			);
+			path = OneSignalWidget;
+			sourceTree = "<group>";
+		};
+		F1D5E929AC4DF2B799E79849 /* Configuration */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = Configuration;
+			sourceTree = "<group>";
+		};
+/* End PBXFileSystemSynchronizedRootGroup section */
+
 /* Begin PBXFrameworksBuildPhase section */
-		B3E2A1091234567890ABCDEF /* Frameworks */ = {
+		37BF2E2C3068001B0010B71E /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				B3E2A1041234567890ABCDEF /* Shared.framework in Frameworks */,
+				37BF2E343068001B0010B71E /* SwiftUI.framework in Frameworks */,
+				37BF2E4C3068009A0010B71E /* OneSignalFramework in Frameworks */,
+				37BF2E323068001B0010B71E /* WidgetKit.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		B3E2A12E1234567890ABCDEF /* Frameworks */ = {
+		57610BD12141A859D44527E4 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				37A0748B2FFE551700C08AD7 /* OneSignalFramework in Frameworks */,
+				37A0748B2FFE551700C08AE1 /* OneSignalInAppMessages in Frameworks */,
+				AW1234AB2FFE551700C0AAAA /* Appwrite in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		B3E2A10A1234567890ABCDEF = {
+		37BF2E303068001B0010B71E /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				B3E2A10B1234567890ABCDEF /* iosApp */,
-				B3E2A10C1234567890ABCDEF /* Frameworks */,
-				B3E2A10D1234567890ABCDEF /* Products */,
-			);
-			sourceTree = "<group>";
-		};
-		B3E2A10B1234567890ABCDEF /* iosApp */ = {
-			isa = PBXGroup;
-			children = (
-				B3E2A1011234567890ABCDEF /* iOSApp.swift */,
-				B3E2A1031234567890ABCDEF /* ContentView.swift */,
-				B3E2A1181234567890ABCDEF /* AuthViewModel.swift */,
-				B3E2A11A1234567890ABCDEF /* LoginView.swift */,
-				B3E2A11C1234567890ABCDEF /* AuthBridge.swift */,
-				B3E2A1201234567890ABCDEF /* PocketFlowActivityAttributes.swift */,
-				B3E2A1221234567890ABCDEF /* LiveActivityManager.swift */,
-				B3E2A1241234567890ABCDEF /* PocketFlowLiveActivityWidget.swift */,
-				B3E2A1321234567890ABCDEF /* PocketFlowWidgets-Info.plist */,
-			);
-			path = iosApp;
-			sourceTree = "<group>";
-		};
-		B3E2A10C1234567890ABCDEF /* Frameworks */ = {
-			isa = PBXGroup;
-			children = (
-				B3E2A1051234567890ABCDEF /* Shared.framework */,
+				37BF2E313068001B0010B71E /* WidgetKit.framework */,
+				37BF2E333068001B0010B71E /* SwiftUI.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
 		};
-		B3E2A10D1234567890ABCDEF /* Products */ = {
+		758BA4CB2C4DF7443352F8B2 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				B3E2A1081234567890ABCDEF /* iosApp.app */,
-				B3E2A1271234567890ABCDEF /* PocketFlowWidgets.appex */,
+				53508FC76E17421CA31DC4D0 /* PocketFlow.app */,
+				37BF2E2F3068001B0010B71E /* OneSignalWidgetExtension.appex */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		9BF5854863F58E4549902958 = {
+			isa = PBXGroup;
+			children = (
+				F1D5E929AC4DF2B799E79849 /* Configuration */,
+				1C3278206FC5A0CE0C647777 /* iosApp */,
+				37BF2E353068001B0010B71E /* OneSignalWidget */,
+				37BF2E303068001B0010B71E /* Frameworks */,
+				758BA4CB2C4DF7443352F8B2 /* Products */,
+			);
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		B3E2A10E1234567890ABCDEF /* iosApp */ = {
+		37BF2E2E3068001B0010B71E /* OneSignalWidgetExtension */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = B3E2A10F1234567890ABCDEF /* Build configuration list for PBXNativeTarget "iosApp" */;
+			buildConfigurationList = 37BF2E463068001C0010B71E /* Build configuration list for PBXNativeTarget "OneSignalWidgetExtension" */;
 			buildPhases = (
-				B3E2A11D1234567890ABCDEF /* Compile Kotlin Framework */,
-				B3E2A1101234567890ABCDEF /* Sources */,
-				B3E2A1091234567890ABCDEF /* Frameworks */,
-				B3E2A1071234567890ABCDEF /* Embed Frameworks */,
-				B3E2A1291234567890ABCDEF /* Embed App Extensions */,
+				37BF2E2B3068001B0010B71E /* Sources */,
+				37BF2E2C3068001B0010B71E /* Frameworks */,
+				37BF2E2D3068001B0010B71E /* Resources */,
 			);
 			buildRules = (
 			);
 			dependencies = (
-				B3E2A12B1234567890ABCDEF /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				37BF2E353068001B0010B71E /* OneSignalWidget */,
+			);
+			name = OneSignalWidgetExtension;
+			packageProductDependencies = (
+				37BF2E4B3068009A0010B71E /* OneSignalFramework */,
+			);
+			productName = OneSignalWidgetExtension;
+			productReference = 37BF2E2F3068001B0010B71E /* OneSignalWidgetExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+		4AB3CF0F42A97CA37E97723D /* iosApp */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 82245713E1392B17D9D3DF06 /* Build configuration list for PBXNativeTarget "iosApp" */;
+			buildPhases = (
+				6DCA43AA598831B12492C5FD /* Compile Kotlin Framework */,
+				FBAE929EC271D879585A63A2 /* Sources */,
+				57610BD12141A859D44527E4 /* Frameworks */,
+				AB5FEB3CC4028F939CC9D96F /* Resources */,
+				37BF2E4A3068001C0010B71E /* Embed Foundation Extensions */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				37BF2E443068001C0010B71E /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				1C3278206FC5A0CE0C647777 /* iosApp */,
 			);
 			name = iosApp;
+			packageProductDependencies = (
+				F5E929AC4DF2B799E798492B /* OneSignalFramework */,
+				37A0748B2FFE551700C08AE0 /* OneSignalInAppMessages */,
+				AW1234AB2FFE551700C0AAAB /* Appwrite */,
+			);
 			productName = iosApp;
-			productReference = B3E2A1081234567890ABCDEF /* iosApp.app */;
+			productReference = 53508FC76E17421CA31DC4D0 /* PocketFlow.app */;
 			productType = "com.apple.product-type.application";
-		};
-		B3E2A12C1234567890ABCDEF /* PocketFlowWidgets */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = B3E2A12F1234567890ABCDEF /* Build configuration list for PBXNativeTarget "PocketFlowWidgets" */;
-			buildPhases = (
-				B3E2A12D1234567890ABCDEF /* Sources */,
-				B3E2A12E1234567890ABCDEF /* Frameworks */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-			);
-			name = PocketFlowWidgets;
-			productName = PocketFlowWidgets;
-			productReference = B3E2A1271234567890ABCDEF /* PocketFlowWidgets.appex */;
-			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
-		B3E2A1111234567890ABCDEF /* Project object */ = {
+		FB72DFB7D0C4D592D4F44BC0 /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
-				LastSwiftUpdateCheck = 1500;
-				LastUpgradeCheck = 1500;
+				LastSwiftUpdateCheck = 2660;
+				LastUpgradeCheck = 2660;
 				TargetAttributes = {
-					B3E2A10E1234567890ABCDEF = {
-						CreatedOnToolsVersion = 15.0;
+					37BF2E2E3068001B0010B71E = {
+						CreatedOnToolsVersion = 26.6;
 					};
-					B3E2A12C1234567890ABCDEF = {
-						CreatedOnToolsVersion = 15.0;
+					4AB3CF0F42A97CA37E97723D = {
+						CreatedOnToolsVersion = 16.2;
+						SystemCapabilities = {
+							com.apple.Push = {
+								enabled = 1;
+							};
+						};
 					};
 				};
 			};
-			buildConfigurationList = B3E2A1121234567890ABCDEF /* Build configuration list for PBXProject "iosApp" */;
-			compatibilityVersion = "Xcode 14.0";
+			buildConfigurationList = 9958BB139E97E0FA749A9AFD /* Build configuration list for PBXProject "iosApp" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
 				en,
 				Base,
 			);
-			mainGroup = B3E2A10A1234567890ABCDEF;
-			productRefGroup = B3E2A10D1234567890ABCDEF /* Products */;
+			mainGroup = 9BF5854863F58E4549902958;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				F5E929AC4DF2B799E798492A /* XCRemoteSwiftPackageReference "OneSignal-XCFramework" */,
+				AW1234AB2FFE551700C0AAA0 /* XCRemoteSwiftPackageReference "sdk-for-apple" */,
+			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 758BA4CB2C4DF7443352F8B2 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				B3E2A10E1234567890ABCDEF /* iosApp */,
-				B3E2A12C1234567890ABCDEF /* PocketFlowWidgets */,
+				4AB3CF0F42A97CA37E97723D /* iosApp */,
+				37BF2E2E3068001B0010B71E /* OneSignalWidgetExtension */,
 			);
 		};
 /* End PBXProject section */
 
+/* Begin PBXResourcesBuildPhase section */
+		37BF2E2D3068001B0010B71E /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		AB5FEB3CC4028F939CC9D96F /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
 /* Begin PBXShellScriptBuildPhase section */
-		B3E2A11D1234567890ABCDEF /* Compile Kotlin Framework */ = {
+		6DCA43AA598831B12492C5FD /* Compile Kotlin Framework */ = {
 			isa = PBXShellScriptBuildPhase;
 			alwaysOutOfDate = 1;
 			buildActionMask = 2147483647;
@@ -226,47 +277,162 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "if [ \"YES\" = \"$OVERRIDE_KOTLIN_BUILD_IDE_SUPPORTED\" ]; then\n  echo \"Skipping Gradle build task invocation due to OVERRIDE_KOTLIN_BUILD_IDE_SUPPORTED environment variable set to \\\"YES\\\"\"\n  exit 0\nfi\ncd \"$SRCROOT/..\"\n./gradlew :shared:embedAndSignAppleFrameworkForXcode";
+			shellScript = "if [ \"YES\" = \"$OVERRIDE_KOTLIN_BUILD_IDE_SUPPORTED\" ]; then\n  echo \"Skipping Gradle build task invocation due to OVERRIDE_KOTLIN_BUILD_IDE_SUPPORTED environment variable set to \\\"YES\\\"\"\n  exit 0\nfi\ncd \"$SRCROOT/..\"\n./gradlew :shared:embedAndSignAppleFrameworkForXcode\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-		B3E2A1101234567890ABCDEF /* Sources */ = {
+		37BF2E2B3068001B0010B71E /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				B3E2A1001234567890ABCDEF /* iOSApp.swift in Sources */,
-				B3E2A1021234567890ABCDEF /* ContentView.swift in Sources */,
-				B3E2A1171234567890ABCDEF /* AuthViewModel.swift in Sources */,
-				B3E2A1191234567890ABCDEF /* LoginView.swift in Sources */,
-				B3E2A11B1234567890ABCDEF /* AuthBridge.swift in Sources */,
-				B3E2A11F1234567890ABCDEF /* PocketFlowActivityAttributes.swift in Sources */,
-				B3E2A1211234567890ABCDEF /* LiveActivityManager.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		B3E2A12D1234567890ABCDEF /* Sources */ = {
+		FBAE929EC271D879585A63A2 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				B3E2A1251234567890ABCDEF /* PocketFlowActivityAttributes.swift in Sources */,
-				B3E2A1261234567890ABCDEF /* PocketFlowLiveActivityWidget.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
-		B3E2A12B1234567890ABCDEF /* PBXTargetDependency */ = {
+		37BF2E443068001C0010B71E /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = B3E2A12C1234567890ABCDEF /* PocketFlowWidgets */;
-			targetProxy = B3E2A12A1234567890ABCDEF /* PBXContainerItemProxy */;
+			target = 37BF2E2E3068001B0010B71E /* OneSignalWidgetExtension */;
+			targetProxy = 37BF2E433068001C0010B71E /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
-		B3E2A1131234567890ABCDEF /* Debug */ = {
+		37BF2E473068001C0010B71E /* Debug */ = {
 			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = OneSignalWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = OneSignalWidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.5;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = app.ak25.pocketflow.OneSignalWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		37BF2E483068001C0010B71E /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = OneSignalWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = OneSignalWidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.5;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = app.ak25.pocketflow.OneSignalWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		3F6038B2915785F5CE0F6574 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = iosApp/iosApp.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_ASSET_PATHS = "\"iosApp/Preview Content\"";
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = iosApp/Info.plist;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UIBackgroundModes = "remote-notification";
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = app.ak25.pocketflow;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		B2FB9C85315FB3AD298053A9 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = iosApp/iosApp.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_ASSET_PATHS = "\"iosApp/Preview Content\"";
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = iosApp/Info.plist;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UIBackgroundModes = "remote-notification";
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = app.ak25.pocketflow;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		D3ECF606E623242265A2BEF5 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReferenceAnchor = F1D5E929AC4DF2B799E79849 /* Configuration */;
+			baseConfigurationReferenceRelativePath = Config.xcconfig;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
@@ -300,9 +466,10 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = WPGR2YT685;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
-				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_NO_COMMON_BLOCKS = YES;
@@ -317,18 +484,22 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.2;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
 			name = Debug;
 		};
-		B3E2A1141234567890ABCDEF /* Release */ = {
+		D73AAB2C0756DB435D7E0745 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReferenceAnchor = F1D5E929AC4DF2B799E79849 /* Configuration */;
+			baseConfigurationReferenceRelativePath = Config.xcconfig;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
@@ -362,9 +533,10 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = WPGR2YT685;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
-				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
@@ -373,165 +545,90 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.2;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
-			};
-			name = Release;
-		};
-		B3E2A1151234567890ABCDEF /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = iosApp/iosApp.entitlements;
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_ASSET_PATHS = "";
-				DEVELOPMENT_TEAM = WPGR2YT685;
-				ENABLE_PREVIEWS = YES;
-				ENABLE_USER_SCRIPT_SANDBOXING = NO;
-				FRAMEWORK_SEARCH_PATHS = (
-					"$(inherited)",
-					"$(SRCROOT)/../shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)",
-				);
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CADisableMinimumFrameDurationOnPhone = YES;
-				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
-				INFOPLIST_KEY_NSSupportsLiveActivitiesFrequentUpdates = YES;
-				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
-				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait";
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-				);
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = app.ak25.pocketflow;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-			};
-			name = Debug;
-		};
-		B3E2A1161234567890ABCDEF /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = iosApp/iosApp.entitlements;
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_ASSET_PATHS = "";
-				ENABLE_PREVIEWS = YES;
-				ENABLE_USER_SCRIPT_SANDBOXING = NO;
-				FRAMEWORK_SEARCH_PATHS = (
-					"$(inherited)",
-					"$(SRCROOT)/../shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)",
-				);
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CADisableMinimumFrameDurationOnPhone = YES;
-				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
-				INFOPLIST_KEY_NSSupportsLiveActivitiesFrequentUpdates = YES;
-				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
-				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait";
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-				);
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = app.ak25.pocketflow;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-			};
-			name = Release;
-		};
-		B3E2A1301234567890ABCDEF /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = WPGR2YT685;
-				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = "iosApp/PocketFlowWidgets-Info.plist";
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-					"@executable_path/../../Frameworks",
-				);
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = app.ak25.pocketflow.PocketFlowWidgets;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SKIP_INSTALL = YES;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-			};
-			name = Debug;
-		};
-		B3E2A1311234567890ABCDEF /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = WPGR2YT685;
-				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = "iosApp/PocketFlowWidgets-Info.plist";
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-					"@executable_path/../../Frameworks",
-				);
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = app.ak25.pocketflow.PocketFlowWidgets;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SKIP_INSTALL = YES;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				VALIDATE_PRODUCT = YES;
 			};
 			name = Release;
 		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		B3E2A10F1234567890ABCDEF /* Build configuration list for PBXNativeTarget "iosApp" */ = {
+		37BF2E463068001C0010B71E /* Build configuration list for PBXNativeTarget "OneSignalWidgetExtension" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				B3E2A1151234567890ABCDEF /* Debug */,
-				B3E2A1161234567890ABCDEF /* Release */,
+				37BF2E473068001C0010B71E /* Debug */,
+				37BF2E483068001C0010B71E /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		B3E2A1121234567890ABCDEF /* Build configuration list for PBXProject "iosApp" */ = {
+		82245713E1392B17D9D3DF06 /* Build configuration list for PBXNativeTarget "iosApp" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				B3E2A1131234567890ABCDEF /* Debug */,
-				B3E2A1141234567890ABCDEF /* Release */,
+				3F6038B2915785F5CE0F6574 /* Debug */,
+				B2FB9C85315FB3AD298053A9 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		B3E2A12F1234567890ABCDEF /* Build configuration list for PBXNativeTarget "PocketFlowWidgets" */ = {
+		9958BB139E97E0FA749A9AFD /* Build configuration list for PBXProject "iosApp" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				B3E2A1301234567890ABCDEF /* Debug */,
-				B3E2A1311234567890ABCDEF /* Release */,
+				D3ECF606E623242265A2BEF5 /* Debug */,
+				D73AAB2C0756DB435D7E0745 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		AW1234AB2FFE551700C0AAA0 /* XCRemoteSwiftPackageReference "sdk-for-apple" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/appwrite/sdk-for-apple";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 9.0.0;
+			};
+		};
+		F5E929AC4DF2B799E798492A /* XCRemoteSwiftPackageReference "OneSignal-XCFramework" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/OneSignal/OneSignal-XCFramework";
+			requirement = {
+				kind = exactVersion;
+				version = 5.5.4;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		37A0748B2FFE551700C08AE0 /* OneSignalInAppMessages */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = F5E929AC4DF2B799E798492A /* XCRemoteSwiftPackageReference "OneSignal-XCFramework" */;
+			productName = OneSignalInAppMessages;
+		};
+		37BF2E4B3068009A0010B71E /* OneSignalFramework */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = F5E929AC4DF2B799E798492A /* XCRemoteSwiftPackageReference "OneSignal-XCFramework" */;
+			productName = OneSignalFramework;
+		};
+		AW1234AB2FFE551700C0AAAB /* Appwrite */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = AW1234AB2FFE551700C0AAA0 /* XCRemoteSwiftPackageReference "sdk-for-apple" */;
+			productName = Appwrite;
+		};
+		F5E929AC4DF2B799E798492B /* OneSignalFramework */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = F5E929AC4DF2B799E798492A /* XCRemoteSwiftPackageReference "OneSignal-XCFramework" */;
+			productName = OneSignalFramework;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
-	rootObject = B3E2A1111234567890ABCDEF /* Project object */;
+	rootObject = FB72DFB7D0C4D592D4F44BC0 /* Project object */;
 }

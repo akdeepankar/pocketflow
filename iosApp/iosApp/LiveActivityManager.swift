@@ -3,7 +3,6 @@ import ActivityKit
 import Shared
 import OneSignalFramework
 
-@MainActor
 final class LiveActivityManager: NSObject, LiveActivityBridge {
     static let shared = LiveActivityManager()
 
