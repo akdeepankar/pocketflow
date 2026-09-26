@@ -65,13 +65,13 @@ final class LiveActivityManager: NSObject, LiveActivityBridge {
             progress: -1.0,
             isFinished: false,
             isSuccess: false,
-            timestamp: Date()
+            timestamp: Date().timeIntervalSince1970
         )
 
         do {
             let activity = try Activity.request(
                 attributes: attributes,
-                content: .init(state: initialContentState, staleDate: Date().addingTimeInterval(900)),
+                content: .init(state: initialContentState, staleDate: Date().addingTimeInterval(300)),
                 pushType: .token
             )
             activeActivities[nodeId] = activity
@@ -164,7 +164,7 @@ final class LiveActivityManager: NSObject, LiveActivityBridge {
             progress: progress,
             isFinished: isFinished,
             isSuccess: isSuccess,
-            timestamp: Date()
+            timestamp: Date().timeIntervalSince1970
         )
 
         Task {
@@ -207,7 +207,7 @@ final class LiveActivityManager: NSObject, LiveActivityBridge {
             progress: 1.0,
             isFinished: true,
             isSuccess: isSuccess,
-            timestamp: Date()
+            timestamp: Date().timeIntervalSince1970
         )
 
         Task {

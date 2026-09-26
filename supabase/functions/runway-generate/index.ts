@@ -99,46 +99,53 @@ export default {
           const nodeType = liveActivity?.nodeType || "IMAGE_GENERATION";
 
           // 1. Send OneSignal Live Activity Remote Update/End
-          if (liveActivity?.activityId && oneSignalRestKey) {
-            const finalStatusText = isSuccess
-              ? (totalSteps > 1 ? `All ${totalSteps} nodes completed! ✓` : `${nodeTitle} Completed! ✓`)
-              : (errorMessage || "Generation Failed");
+          if (liveActivity?.activityId) {
+            if (!oneSignalRestKey) {
+              console.warn("[OneSignal LiveActivity] ⚠️ ONESIGNAL_REST_API_KEY is not set in Supabase Secrets. Cannot send remote Live Activity push.");
+            } else {
+              const finalStatusText = isSuccess
+                ? (totalSteps > 1 ? `All ${totalSteps} nodes completed! ✓` : `${nodeTitle} Completed! ✓`)
+                : (errorMessage || "Generation Failed");
 
-            const liveActivityPayload = {
-              name: "PocketFlow Live Activity Completion",
-              event: "end",
-              event_updates: {
-                status: finalStatusText,
-                nodeTitle: nodeTitle,
-                workflowName: workflowName,
-                currentStep: totalSteps,
-                totalSteps: totalSteps,
-                completedSteps: isSuccess ? totalSteps : (currentStep - 1),
-                stepNodeTypes: stepNodeTypes,
-                currentNodeType: nodeType,
-                progress: 1.0,
-                isFinished: true,
-                isSuccess: isSuccess,
-                timestamp: Math.floor(Date.now() / 1000),
-              },
-            };
+              const nowUnix = Math.floor(Date.now() / 1000);
+              const liveActivityPayload = {
+                name: "PocketFlow Live Activity Completion",
+                event: "end",
+                dismiss_at: nowUnix + 5, // Dismiss from lock screen 5s after completion
+                event_updates: {
+                  status: finalStatusText,
+                  nodeTitle: nodeTitle,
+                  workflowName: workflowName,
+                  currentStep: totalSteps,
+                  totalSteps: totalSteps,
+                  completedSteps: isSuccess ? totalSteps : (currentStep - 1),
+                  stepNodeTypes: stepNodeTypes,
+                  currentNodeType: nodeType,
+                  progress: 1.0,
+                  isFinished: true,
+                  isSuccess: isSuccess,
+                  timestamp: nowUnix,
+                },
+              };
 
-            try {
-              console.log(`[OneSignal LiveActivity] Sending end event for activity: ${liveActivity.activityId}`);
-              const laRes = await fetch(
-                `https://onesignal.com/api/v1/apps/${ONESIGNAL_APP_ID}/live_activities/${liveActivity.activityId}/notifications`,
-                {
-                  method: "POST",
-                  headers: {
-                    "Authorization": `Key ${oneSignalRestKey}`,
-                    "Content-Type": "application/json",
-                  },
-                  body: JSON.stringify(liveActivityPayload),
-                }
-              );
-              console.log(`[OneSignal LiveActivity] Status: ${laRes.status}`);
-            } catch (laErr) {
-              console.error(`[OneSignal LiveActivity] Failed to send update:`, laErr);
+              try {
+                console.log(`[OneSignal LiveActivity] Sending end event for activity: ${liveActivity.activityId}`);
+                const laRes = await fetch(
+                  `https://api.onesignal.com/apps/${ONESIGNAL_APP_ID}/live_activities/${liveActivity.activityId}/notifications`,
+                  {
+                    method: "POST",
+                    headers: {
+                      "Authorization": `Key ${oneSignalRestKey}`,
+                      "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify(liveActivityPayload),
+                  }
+                );
+                const respText = await laRes.text();
+                console.log(`[OneSignal LiveActivity] Status: ${laRes.status}, Response: ${respText}`);
+              } catch (laErr) {
+                console.error(`[OneSignal LiveActivity] Failed to send update:`, laErr);
+              }
             }
           }
 
