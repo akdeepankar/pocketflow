@@ -186,8 +186,14 @@ class RunwayService {
 
     private suspend fun pollTask(taskId: String): JsonObject {
         var consecutiveErrors = 0
+        var lastRenewTime = app.ak25.pocketflow.utils.getCurrentTimeMillis()
         for (i in 0 until 180) { // Poll up to 15 minutes
             delay(5000)
+            val now = app.ak25.pocketflow.utils.getCurrentTimeMillis()
+            if (now - lastRenewTime >= 20_000L) {
+                lastRenewTime = now
+                app.ak25.pocketflow.storage.LocalStorage.beginBackgroundTask("pocketflow_poll_$taskId")
+            }
             try {
                 val response = httpClient.get("$runwayBaseUrl/tasks/$taskId") {
                     header("Authorization", "Bearer $runwayApiKey")

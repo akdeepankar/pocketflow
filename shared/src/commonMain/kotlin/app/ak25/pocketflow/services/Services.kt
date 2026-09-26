@@ -32,22 +32,7 @@ class ExecutionEngine(private val controller: WorkflowController) {
     fun isRunning(nodeId: String): Boolean = activeRuns.contains(nodeId)
 
     private suspend fun resolveNodeOutput(sourceNode: app.ak25.pocketflow.models.WorkflowNode): String? {
-        var uri = sourceNode.outputUrl ?: sourceNode.outputLocalPath ?: (if (sourceNode.type == NodeType.UPLOADED_IMAGE) sourceNode.params["imageUri"] else null)
-        val currentJobId = sourceNode.jobId ?: sourceNode.params["jobId"]
-        if (uri != null && !uri.startsWith("http://") && !uri.startsWith("https://") && !uri.startsWith("data:") && !currentJobId.isNullOrEmpty()) {
-            try {
-                val task = runwayService.getTask(currentJobId)
-                val remoteUrl = task["output"]?.jsonArray?.firstOrNull()?.jsonPrimitive?.content
-                    ?: task["artifactUrl"]?.jsonPrimitive?.content
-                if (!remoteUrl.isNullOrEmpty()) {
-                    uri = remoteUrl
-                    controller.updateNodeStatus(sourceNode.id, sourceNode.status, outputUrl = remoteUrl)
-                }
-            } catch (e: Exception) {
-                // ignore
-            }
-        }
-        return uri
+        return sourceNode.outputUrl ?: sourceNode.outputLocalPath ?: (if (sourceNode.type == NodeType.UPLOADED_IMAGE) sourceNode.params["imageUri"] else null)
     }
 
     private var cancelled = false
@@ -71,13 +56,15 @@ class ExecutionEngine(private val controller: WorkflowController) {
             app.ak25.pocketflow.storage.LocalStorage.beginBackgroundTask("pocketflow_node_$nodeId")
         }
         
-        val workflow = controller.workflows.value.find { wf -> wf.nodes.any { it.id == nodeId } } ?: run {
-            if (activityKey == null) {
-                app.ak25.pocketflow.storage.LocalStorage.endBackgroundTask()
+        val workflow = controller.currentWorkflow.value?.takeIf { it.nodes.any { n -> n.id == nodeId } }
+            ?: controller.workflows.value.find { wf -> wf.nodes.any { it.id == nodeId } }
+            ?: run {
+                if (activityKey == null) {
+                    app.ak25.pocketflow.storage.LocalStorage.endBackgroundTask()
+                }
+                activeRuns.remove(nodeId)
+                return false
             }
-            activeRuns.remove(nodeId)
-            return false
-        }
         val node = workflow.nodes.find { it.id == nodeId } ?: run {
             if (activityKey == null) {
                 app.ak25.pocketflow.storage.LocalStorage.endBackgroundTask()
@@ -331,7 +318,9 @@ class ExecutionEngine(private val controller: WorkflowController) {
 
 
     private suspend fun executeNode(nodeId: String): String {
-        val workflow = controller.workflows.value.find { wf -> wf.nodes.any { it.id == nodeId } } ?: throw Exception("No workflow found containing node $nodeId")
+        val workflow = controller.currentWorkflow.value?.takeIf { it.nodes.any { n -> n.id == nodeId } }
+            ?: controller.workflows.value.find { wf -> wf.nodes.any { it.id == nodeId } }
+            ?: throw Exception("No workflow found containing node $nodeId")
         val node = workflow.nodes.find { it.id == nodeId } ?: throw Exception("Node not found")
         val edges = workflow.edges
 
@@ -729,9 +718,14 @@ class ExecutionEngine(private val controller: WorkflowController) {
                     continue
                 }
                 val stepIndex = genNodes.indexOfFirst { it.id == nodeId } + 1
+                val currentStepNum = if (stepIndex > 0) stepIndex else (completedCount + 1)
+                
+                // Rotate background task for this specific step so iOS watchdog gives a fresh timer
+                app.ak25.pocketflow.storage.LocalStorage.beginBackgroundTask("pocketflow_step_${currentStepNum}_$nodeId")
+
                 val success = runNode(
                     nodeId = nodeId,
-                    currentStep = if (stepIndex > 0) stepIndex else (completedCount + 1),
+                    currentStep = currentStepNum,
                     totalSteps = totalSteps,
                     completedSteps = completedCount,
                     activityKey = workflow.id,

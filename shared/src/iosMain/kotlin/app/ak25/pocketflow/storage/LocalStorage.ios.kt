@@ -193,33 +193,31 @@ actual object LocalStorage {
     }
 
     private var activeBgTaskId: platform.UIKit.UIBackgroundTaskIdentifier = platform.UIKit.UIBackgroundTaskInvalid
-    private var bgTaskCount: Int = 0
     private val bgLock = platform.Foundation.NSLock()
 
     actual fun beginBackgroundTask(name: String) {
         try {
             bgLock.lock()
             try {
-                bgTaskCount++
-                if (activeBgTaskId == platform.UIKit.UIBackgroundTaskInvalid) {
-                    var newTaskId: platform.UIKit.UIBackgroundTaskIdentifier = platform.UIKit.UIBackgroundTaskInvalid
-                    newTaskId = platform.UIKit.UIApplication.sharedApplication.beginBackgroundTaskWithName(name) {
-                        println("[iOS-Background] ⚠️ Background task '$name' (id=$newTaskId) expired by iOS watchdog.")
-                        bgLock.lock()
-                        try {
-                            if (activeBgTaskId == newTaskId) {
-                                activeBgTaskId = platform.UIKit.UIBackgroundTaskInvalid
-                                bgTaskCount = 0
-                            }
-                            platform.UIKit.UIApplication.sharedApplication.endBackgroundTask(newTaskId)
-                        } finally {
-                            bgLock.unlock()
+                val oldId = activeBgTaskId
+                var newTaskId: platform.UIKit.UIBackgroundTaskIdentifier = platform.UIKit.UIBackgroundTaskInvalid
+                newTaskId = platform.UIKit.UIApplication.sharedApplication.beginBackgroundTaskWithName(name) {
+                    println("[iOS-Background] ⚠️ Background task '$name' (id=$newTaskId) expired by iOS watchdog.")
+                    bgLock.lock()
+                    try {
+                        if (activeBgTaskId == newTaskId) {
+                            activeBgTaskId = platform.UIKit.UIBackgroundTaskInvalid
                         }
+                        platform.UIKit.UIApplication.sharedApplication.endBackgroundTask(newTaskId)
+                    } finally {
+                        bgLock.unlock()
                     }
-                    activeBgTaskId = newTaskId
-                    println("[iOS-Background] 🛡️ Started background task '$name' (id=$newTaskId, count=$bgTaskCount)")
-                } else {
-                    println("[iOS-Background] 🛡️ Retained existing background task (id=$activeBgTaskId, count=$bgTaskCount) for '$name'")
+                }
+                activeBgTaskId = newTaskId
+                println("[iOS-Background] 🛡️ Started background task '$name' (id=$newTaskId, replaced old=$oldId)")
+
+                if (oldId != platform.UIKit.UIBackgroundTaskInvalid) {
+                    platform.UIKit.UIApplication.sharedApplication.endBackgroundTask(oldId)
                 }
             } finally {
                 bgLock.unlock()
@@ -233,11 +231,7 @@ actual object LocalStorage {
         try {
             bgLock.lock()
             try {
-                if (bgTaskCount > 0) {
-                    bgTaskCount--
-                }
-                println("[iOS-Background] 🏁 Release background task requested (remaining count=$bgTaskCount, id=$activeBgTaskId)")
-                if (bgTaskCount == 0 && activeBgTaskId != platform.UIKit.UIBackgroundTaskInvalid) {
+                if (activeBgTaskId != platform.UIKit.UIBackgroundTaskInvalid) {
                     val id = activeBgTaskId
                     activeBgTaskId = platform.UIKit.UIBackgroundTaskInvalid
                     platform.UIKit.UIApplication.sharedApplication.endBackgroundTask(id)

@@ -134,8 +134,14 @@ class TripoService {
 
         // Poll
         var consecutiveErrors = 0
+        var lastRenewTime = app.ak25.pocketflow.utils.getCurrentTimeMillis()
         for (i in 0 until 180) {
             delay(5000)
+            val now = app.ak25.pocketflow.utils.getCurrentTimeMillis()
+            if (now - lastRenewTime >= 20_000L) {
+                lastRenewTime = now
+                app.ak25.pocketflow.storage.LocalStorage.beginBackgroundTask("pocketflow_tripo_poll_$taskId")
+            }
             try {
                 val pollResp = httpClient.get("$tripoBaseUrl/task/$taskId") {
                     header("Authorization", "Bearer $tripoApiKey")
