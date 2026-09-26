@@ -54,8 +54,8 @@ object SharedAuthViewModel {
     private val json = Json { ignoreUnknownKeys = true; coerceInputValues = true }
 
     init {
-        val jwt = LocalStorage.loadString("appwrite_jwt") ?: ""
-        val sessionId = LocalStorage.loadString("appwrite_session_id") ?: ""
+        val jwt = LocalStorage.loadString("supabase_jwt") ?: LocalStorage.loadString("appwrite_jwt") ?: ""
+        val sessionId = LocalStorage.loadString("supabase_session_id") ?: LocalStorage.loadString("appwrite_session_id") ?: ""
         val isGuest = LocalStorage.loadString("is_guest") == "true"
 
         isLoggedIn = jwt.isNotEmpty() || sessionId.isNotEmpty() || isGuest
@@ -78,8 +78,8 @@ object SharedAuthViewModel {
     fun refreshAccountInfo() {
         kotlinx.coroutines.CoroutineScope(Dispatchers.IO).launch {
             try {
-                val localJwt = LocalStorage.loadString("appwrite_jwt") ?: ""
-                val localRefresh = LocalStorage.loadString("appwrite_session_id") ?: ""
+                val localJwt = LocalStorage.loadString("supabase_jwt") ?: LocalStorage.loadString("appwrite_jwt") ?: ""
+                val localRefresh = LocalStorage.loadString("supabase_session_id") ?: LocalStorage.loadString("appwrite_session_id") ?: ""
                 
                 var session = supabaseClient.auth.currentSessionOrNull()
                 if (session == null && localJwt.isNotEmpty()) {
@@ -107,6 +107,9 @@ object SharedAuthViewModel {
                     val meta = user.userMetadata
                     val name = meta?.get("name")?.jsonPrimitive?.contentOrNull ?: ""
                     
+                    LocalStorage.saveString("supabase_jwt", token)
+                    LocalStorage.saveString("supabase_session_id", session.refreshToken)
+                    LocalStorage.saveString("supabase_user_id", userId)
                     LocalStorage.saveString("appwrite_jwt", token)
                     LocalStorage.saveString("appwrite_session_id", session.refreshToken)
                     LocalStorage.saveString("appwrite_user_id", userId)
@@ -211,6 +214,9 @@ object SharedAuthViewModel {
                 supabaseClient.auth.signOut()
             } catch (_: Exception) {}
             
+            LocalStorage.saveString("supabase_jwt", "")
+            LocalStorage.saveString("supabase_session_id", "")
+            LocalStorage.saveString("supabase_user_id", "")
             LocalStorage.saveString("appwrite_jwt", "")
             LocalStorage.saveString("appwrite_session_id", "")
             LocalStorage.saveString("appwrite_user_id", "")
@@ -237,6 +243,9 @@ object SharedAuthViewModel {
         setGuestState(true)
         LocalStorage.saveString("user_name", "Guest")
         LocalStorage.saveString("user_email", "")
+        LocalStorage.saveString("supabase_jwt", "")
+        LocalStorage.saveString("supabase_session_id", "")
+        LocalStorage.saveString("supabase_user_id", "")
         LocalStorage.saveString("appwrite_jwt", "")
         LocalStorage.saveString("appwrite_session_id", "")
         LocalStorage.saveString("appwrite_user_id", "")
@@ -437,6 +446,9 @@ object SharedAuthViewModel {
             ?: metadata?.get("name")?.jsonPrimitive?.contentOrNull 
             ?: ""
         
+        LocalStorage.saveString("supabase_jwt", token)
+        LocalStorage.saveString("supabase_session_id", session.refreshToken ?: "")
+        LocalStorage.saveString("supabase_user_id", uid)
         LocalStorage.saveString("appwrite_jwt", token)
         LocalStorage.saveString("appwrite_session_id", session.refreshToken ?: "")
         LocalStorage.saveString("appwrite_user_id", uid)

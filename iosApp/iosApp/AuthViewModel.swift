@@ -80,18 +80,18 @@ class AppleSignInDelegate: NSObject, ASAuthorizationControllerDelegate {
 //   1. On cold launch  → read stored credentials from UserDefaults; set
 //      isLoggedIn = true immediately (no network call) so the home screen
 //      appears without delay.
-//   2. Login / Sign-up → call Appwrite REST API, persist credentials, then
+//   2. Login / Sign-up → call Supabase REST API (GoTrue), persist credentials, then
 //      set isLoggedIn = true so RootView transitions to the home screen.
-//   3. Sign-out        → delete the Appwrite session, wipe UserDefaults,
+//   3. Sign-out        → delete the Supabase session, wipe UserDefaults,
 //      set isLoggedIn = false so RootView transitions back to LoginView.
 //
 // UserDefaults keys written here (read by KMP LocalStorage.ios.kt):
-//   • appwrite_jwt          – JWT token for Appwrite API calls
-//   • appwrite_session_id   – Appwrite session $id
-//   • appwrite_user_id      – Appwrite account $id
-//   • user_name             – display name
-//   • user_email            – email address
-//   • sign_out_requested    – KMP sets this to "true" to trigger sign-out
+//   • supabase_jwt / appwrite_jwt         – JWT / access token for Supabase API calls
+//   • supabase_session_id / appwrite_session_id – Session refresh token
+//   • supabase_user_id / appwrite_user_id – Supabase user UUID
+//   • user_name                           – display name
+//   • user_email                          – email address
+//   • sign_out_requested                  – KMP sets this to "true" to trigger sign-out
 //
 // IMPORTANT: Always clear "sign_out_requested" before writing other keys.
 // RootView listens to UserDefaults.didChangeNotification and calls signOut()
@@ -134,9 +134,9 @@ class AuthViewModel: ObservableObject {
     // ─────────────────────────────────────────────────────────────────────────
 
     init() {
-        let jwt       = defaults.string(forKey: "appwrite_jwt")        ?? ""
-        let sessionId = defaults.string(forKey: "appwrite_session_id") ?? ""
-        let userId    = defaults.string(forKey: "appwrite_user_id")    ?? ""
+        let jwt       = defaults.string(forKey: "supabase_jwt")        ?? defaults.string(forKey: "appwrite_jwt")        ?? ""
+        let sessionId = defaults.string(forKey: "supabase_session_id") ?? defaults.string(forKey: "appwrite_session_id") ?? ""
+        let userId    = defaults.string(forKey: "supabase_user_id")    ?? defaults.string(forKey: "appwrite_user_id")    ?? ""
         let isGuest   = defaults.string(forKey: "is_guest")            ?? ""
 
         if !jwt.isEmpty || !sessionId.isEmpty || !userId.isEmpty {
@@ -177,16 +177,17 @@ class AuthViewModel: ObservableObject {
         // Clear stale sign-out flag BEFORE any UserDefaults writes.
         clearSignOutFlag()
 
-        // Step 1: Create Appwrite session (required — everything else is best-effort).
+        // Step 1: Create Supabase session (required — everything else is best-effort).
         guard let sessionId = await createSession(email: email, password: password) else { return }
 
         // Step 2: Persist session info.
+        defaults.set(sessionId, forKey: "supabase_session_id")
         defaults.set(sessionId, forKey: "appwrite_session_id")
         defaults.set(email,     forKey: "user_email")
         defaults.synchronize()
 
         // Step 3: Fetch JWT + account details inline so they are available
-        // before the home screen renders (Share sheet needs appwrite_jwt).
+        // before the home screen renders.
         await fetchAndPersistJWTAndAccount(sessionId: sessionId)
 
         // Step 4: Navigate to home screen.
@@ -208,15 +209,15 @@ class AuthViewModel: ObservableObject {
         // Clear stale sign-out flag BEFORE any UserDefaults writes.
         clearSignOutFlag()
 
-        // Step 1: Create Appwrite account.
+        // Step 1: Create Supabase account.
         guard await createAccount(name: name, email: email, password: password) else { return }
 
-        // Step 2: Create session (inline — don't call login() to avoid
-        // double isLoading management and double sign-out-flag clearing).
+        // Step 2: Create session.
         guard let sessionId = await createSession(email: email, password: password) else { return }
 
         // Step 3: Persist session + name from the sign-up form immediately
         // so KMP layer has a name before fetchAccount completes.
+        defaults.set(sessionId, forKey: "supabase_session_id")
         defaults.set(sessionId, forKey: "appwrite_session_id")
         defaults.set(email,     forKey: "user_email")
         defaults.set(name,      forKey: "user_name")
@@ -243,13 +244,14 @@ class AuthViewModel: ObservableObject {
         stopSignOutPolling()
 
         // Best-effort: delete the session on the server.
-        let jwt = defaults.string(forKey: "appwrite_jwt") ?? ""
+        let jwt = defaults.string(forKey: "supabase_jwt") ?? defaults.string(forKey: "appwrite_jwt") ?? ""
         if !jwt.isEmpty {
             _ = await deleteCurrentSession(jwt: jwt)
         }
 
         // Wipe all stored credentials including guest flag.
-        for key in ["appwrite_jwt", "appwrite_session_id", "appwrite_user_id",
+        for key in ["supabase_jwt", "supabase_session_id", "supabase_user_id",
+                    "appwrite_jwt", "appwrite_session_id", "appwrite_user_id",
                     "user_name", "user_email", "sign_out_requested", "is_guest"] {
             defaults.set("", forKey: key)
         }
@@ -354,7 +356,9 @@ class AuthViewModel: ObservableObject {
                     return
                 }
                 
+                defaults.set(accessToken, forKey: "supabase_jwt")
                 defaults.set(accessToken, forKey: "appwrite_jwt")
+                defaults.set(id, forKey: "supabase_user_id")
                 defaults.set(id, forKey: "appwrite_user_id")
                 defaults.set(name, forKey: "user_name")
                 defaults.set(email, forKey: "user_email")
@@ -381,9 +385,7 @@ class AuthViewModel: ObservableObject {
     // ─────────────────────────────────────────────────────────────────────────
 
     /// Fetches a JWT using the session cookie, then fetches account details.
-    /// Persists appwrite_jwt, appwrite_user_id, user_name to UserDefaults.
-    /// Falls back to a sentinel JWT ("session_only_<sessionId>") if JWT
-    /// creation fails, so the KMP layer still knows a session exists.
+    /// Persists supabase_jwt, supabase_user_id, user_name to UserDefaults.
     private func fetchAndPersistJWTAndAccount(sessionId: String) async {
         // Always clear sign-out flag before writing to UserDefaults to prevent
         // the RootView listener from triggering a spurious sign-out.
@@ -401,15 +403,18 @@ class AuthViewModel: ObservableObject {
 
         if let jwt = jwt {
             let (userId, fetchedName) = await fetchAccount(jwt: jwt) ?? ("", "")
+            defaults.set(jwt, forKey: "supabase_jwt")
             defaults.set(jwt, forKey: "appwrite_jwt")
-            if !userId.isEmpty      { defaults.set(userId,       forKey: "appwrite_user_id") }
+            if !userId.isEmpty {
+                defaults.set(userId, forKey: "supabase_user_id")
+                defaults.set(userId, forKey: "appwrite_user_id")
+            }
             if !fetchedName.isEmpty { defaults.set(fetchedName,  forKey: "user_name") }
             defaults.synchronize()
             print("[Auth] JWT persisted successfully")
         } else {
-            // JWT creation failed after retries. Store empty string (not a sentinel)
-            // so the KMP layer skips the JWT header and avoids 401 errors on share calls.
             print("[Auth] JWT creation failed after retries — storing empty JWT")
+            defaults.set("", forKey: "supabase_jwt")
             defaults.set("", forKey: "appwrite_jwt")
             defaults.synchronize()
         }
@@ -436,9 +441,11 @@ class AuthViewModel: ObservableObject {
             if http.statusCode == 200 || http.statusCode == 201 {
                 if let user = json?["user"] as? [String: Any],
                    let uid = user["id"] as? String {
+                    defaults.set(uid, forKey: "supabase_user_id")
                     defaults.set(uid, forKey: "appwrite_user_id")
                 }
                 if let accessToken = json?["access_token"] as? String {
+                    defaults.set(accessToken, forKey: "supabase_jwt")
                     defaults.set(accessToken, forKey: "appwrite_jwt")
                 }
                 defaults.synchronize()
@@ -455,7 +462,7 @@ class AuthViewModel: ObservableObject {
 
     /// Returns the cached JWT/access_token string.
     private func createJWT() async -> String? {
-        return defaults.string(forKey: "appwrite_jwt")
+        return defaults.string(forKey: "supabase_jwt") ?? defaults.string(forKey: "appwrite_jwt")
     }
 
     /// GET /auth/v1/user → returns (userId, displayName) using the provided JWT.

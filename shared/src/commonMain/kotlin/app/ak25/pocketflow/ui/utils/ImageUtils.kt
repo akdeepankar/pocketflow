@@ -87,8 +87,8 @@ object MediaLoader {
             }
         }
 
-        // 3. Appwrite / Supabase Storage URL
-        if (uri.startsWith("http") && SupabaseRepository.isAppwriteStorageUrl(uri)) {
+        // 3. Supabase Storage URL
+        if (uri.startsWith("http") && SupabaseRepository.isSupabaseStorageUrl(uri)) {
             try {
                 val bytes = SupabaseRepository.downloadStorageFile(uri)
                 if (bytes != null) {

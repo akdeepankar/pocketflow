@@ -91,9 +91,9 @@ object SupabaseRepository {
         }
     }
 
-    private fun jwt(): String = LocalStorage.loadString("appwrite_jwt") ?: ""
-    private fun userId(): String = LocalStorage.loadString("appwrite_user_id") ?: ""
-    private fun sessionId(): String = LocalStorage.loadString("appwrite_session_id") ?: ""
+    private fun jwt(): String = LocalStorage.loadString("supabase_jwt") ?: LocalStorage.loadString("appwrite_jwt") ?: ""
+    private fun userId(): String = LocalStorage.loadString("supabase_user_id") ?: LocalStorage.loadString("appwrite_user_id") ?: ""
+    private fun sessionId(): String = LocalStorage.loadString("supabase_session_id") ?: LocalStorage.loadString("appwrite_session_id") ?: ""
 
     internal fun jwtExpired(token: String): Boolean {
         if (token.isEmpty()) return true
@@ -117,6 +117,7 @@ object SupabaseRepository {
                 val session = supabaseClient.auth.currentSessionOrNull()
                 val token = session?.accessToken ?: ""
                 if (token.isNotEmpty()) {
+                    LocalStorage.saveString("supabase_jwt", token)
                     LocalStorage.saveString("appwrite_jwt", token)
                 }
                 token
@@ -353,7 +354,7 @@ object SupabaseRepository {
         }
     }
 
-    fun isAppwriteStorageUrl(url: String): Boolean = "/storage/v1/object/public/" in url
+    fun isSupabaseStorageUrl(url: String): Boolean = "/storage/v1/object/public/" in url || "/storage/v1/object/" in url
 
     suspend fun downloadStorageFile(url: String): ByteArray? = withContext(Dispatchers.IO) {
         try {

@@ -25,10 +25,10 @@ class TripoService {
     }
 
     private suspend fun downloadFile(url: String): ByteArray {
-        // Appwrite Storage files are private (need JWT/session) — fetch with auth.
-        if (SupabaseRepository.isAppwriteStorageUrl(url)) {
+        // Supabase Storage files may need auth if private
+        if (SupabaseRepository.isSupabaseStorageUrl(url)) {
             return SupabaseRepository.downloadStorageFile(url)
-                ?: throw Exception("Failed to download Appwrite storage file: $url")
+                ?: throw Exception("Failed to download Supabase storage file: $url")
         }
         val response = httpClient.get(url)
         return response.readBytes()

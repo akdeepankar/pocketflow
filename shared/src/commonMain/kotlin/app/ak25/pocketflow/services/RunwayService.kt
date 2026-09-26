@@ -35,13 +35,12 @@ class RunwayService {
     private suspend fun toApiUri(uri: String): String {
         println("DEBUG: toApiUri called with: $uri")
         if (uri.startsWith("http://") || uri.startsWith("https://") || uri.startsWith("data:")) {
-            // Appwrite Storage URLs are private (need JWT/session) — Runway can't
-            // fetch them server-side, so download with auth and embed as base64.
-            if (uri.startsWith("http") && SupabaseRepository.isAppwriteStorageUrl(uri)) {
+            // Supabase Storage URLs may be authenticated — download and embed as base64 if needed.
+            if (uri.startsWith("http") && SupabaseRepository.isSupabaseStorageUrl(uri)) {
                 val bytes = SupabaseRepository.downloadStorageFile(uri)
-                    ?: throw Exception("Failed to download Appwrite storage file: $uri")
+                    ?: throw Exception("Failed to download Supabase storage file: $uri")
                 val base64 = Base64.Default.encode(bytes)
-                println("DEBUG: toApiUri embedded Appwrite storage file. base64Length=${base64.length}")
+                println("DEBUG: toApiUri embedded Supabase storage file. base64Length=${base64.length}")
                 return "data:image/png;base64,$base64"
             }
             return uri
@@ -75,14 +74,15 @@ class RunwayService {
      * Submit a Runway task.
      *
      * Routing:
-     *   1. Try via Appwrite Function `runway-generate` (API key stays server-side).
+     *   1. Try via Supabase Edge Function `runway-generate` (API key stays server-side).
      *   2. If that fails (JWT absent, function not deployed), fall back to direct call.
      *
      * Polling still happens locally — only the initial POST is routed here.
      */
     private suspend fun runwayFetch(endpoint: String, body: JsonObject): JsonObject {
-        // ── Path 1: via Appwrite Function ──────────────────────────────────────
-        val jwt = app.ak25.pocketflow.storage.LocalStorage.loadString("appwrite_jwt")
+        // ── Path 1: via Supabase Function ──────────────────────────────────────
+        val jwt = app.ak25.pocketflow.storage.LocalStorage.loadString("supabase_jwt")
+            ?: app.ak25.pocketflow.storage.LocalStorage.loadString("appwrite_jwt")
         if (!jwt.isNullOrEmpty()) {
             try {
                 val jobId = SupabaseRepository.invokeRunwayFunction(endpoint, body)
@@ -95,7 +95,7 @@ class RunwayService {
                     }
                 }
             } catch (e: Exception) {
-                println("[RunwayService] Appwrite Function failed, falling back to direct call: ${e.message}")
+                println("[RunwayService] Supabase Function failed, falling back to direct call: ${e.message}")
             }
         }
 

@@ -36,7 +36,7 @@ import kotlinx.coroutines.launch
  * Owner view:
  *   - Displays the 5-char join code (tap to copy)
  *   - Shows up to MAX_MEMBERS avatar chips with green-outline if that user is
- *     currently active (online via Appwrite Presences API, 30 s TTL)
+ *     currently active (online via Realtime Presences)
  *
  * Guest view (opened via "Join workflow" from a separate entry):
  *   - Text field to enter a code
@@ -50,7 +50,7 @@ fun WorkflowShareSheet(
     onWorkflowJoined: (Workflow) -> Unit = {}
 ) {
     val scope = rememberCoroutineScope()
-    val myUserId = remember { LocalStorage.loadString("appwrite_user_id") ?: "" }
+    val myUserId = remember { LocalStorage.loadString("supabase_user_id") ?: LocalStorage.loadString("appwrite_user_id") ?: "" }
 
     // Share state
     var shareInfo by remember { mutableStateOf<WorkflowShareInfo?>(null) }

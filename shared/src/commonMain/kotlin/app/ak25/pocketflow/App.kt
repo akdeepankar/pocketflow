@@ -117,7 +117,7 @@ fun App() {
     val authViewModel = app.ak25.pocketflow.ui.auth.SharedAuthViewModel
     val uriHandler = androidx.compose.ui.platform.LocalUriHandler.current
 
-    // Sync workflows with Appwrite whenever the user becomes logged in
+    // Sync workflows with Supabase whenever the user becomes logged in
     LaunchedEffect(authViewModel.isLoggedIn) {
         if (authViewModel.isLoggedIn) {
             controller.syncWithCloud()
@@ -159,7 +159,7 @@ fun App() {
                         // iOS — handled by the native AuthViewModel through the bridge
                         appScope.launch { authViewModel.signInWithGoogle() }
                     } else {
-                        // Android — open the Appwrite OAuth URL, result handled in handleOAuthResult
+                        // Android — open the Supabase OAuth URL, result handled in handleOAuthResult
                         uriHandler.openUri(authViewModel.getGoogleOAuthUrl())
                     }
                 },
@@ -168,7 +168,7 @@ fun App() {
                         // iOS — handled by the native AuthViewModel through the bridge
                         appScope.launch { authViewModel.signInWithApple() }
                     } else {
-                        // Android — open the Appwrite OAuth URL, result handled in handleOAuthResult
+                        // Android — open the Supabase OAuth URL, result handled in handleOAuthResult
                         uriHandler.openUri(authViewModel.getAppleOAuthUrl())
                     }
                 },

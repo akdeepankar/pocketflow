@@ -101,7 +101,7 @@ object WorkflowShareRepository {
 
     private val json = Json { ignoreUnknownKeys = true; coerceInputValues = true }
 
-    private fun myUserId() = LocalStorage.loadString("appwrite_user_id") ?: ""
+    private fun myUserId() = LocalStorage.loadString("supabase_user_id") ?: LocalStorage.loadString("appwrite_user_id") ?: ""
     private fun myUserName() = LocalStorage.loadString("user_name") ?: "Unknown"
     private fun myUserEmail() = LocalStorage.loadString("user_email") ?: ""
 

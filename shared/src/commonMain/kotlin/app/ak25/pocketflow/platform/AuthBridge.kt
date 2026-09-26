@@ -4,7 +4,7 @@ package app.ak25.pocketflow.platform
  * Platform auth actions used by the shared auth page.
  *
  * On iOS this is implemented by [AuthBridgeImpl] (Swift), which delegates every
- * call to the native `AuthViewModel` (URLSession + Appwrite REST). On Android it
+ * call to the native `AuthViewModel` (URLSession + Supabase REST / GoTrue). On Android it
  * stays null and [app.ak25.pocketflow.ui.auth.SharedAuthViewModel] performs the
  * same REST calls directly with Ktor.
  *

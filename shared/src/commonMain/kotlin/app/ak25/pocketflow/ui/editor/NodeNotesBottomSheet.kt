@@ -32,7 +32,7 @@ fun NodeNotesBottomSheet(
     controller: WorkflowController,
     onDismissRequest: () -> Unit
 ) {
-    val myUserId = LocalStorage.loadString("appwrite_user_id").orEmpty()
+    val myUserId = (LocalStorage.loadString("supabase_user_id") ?: LocalStorage.loadString("appwrite_user_id")).orEmpty()
     var newNote by remember { mutableStateOf("") }
     val focusManager = LocalFocusManager.current
 

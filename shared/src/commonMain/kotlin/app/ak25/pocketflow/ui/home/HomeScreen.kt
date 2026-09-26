@@ -137,7 +137,8 @@ fun HomeScreen(
 
         // After login (incl. guest → real account), push any local/guest workflows
         // up to the cloud owned by this user. refreshFromCloud() guards for guests.
-        val userId = app.ak25.pocketflow.storage.LocalStorage.loadString("appwrite_user_id").orEmpty()
+        val userId = (app.ak25.pocketflow.storage.LocalStorage.loadString("supabase_user_id")
+            ?: app.ak25.pocketflow.storage.LocalStorage.loadString("appwrite_user_id")).orEmpty()
         if (userId.isNotEmpty()) {
             controller.syncWithCloud()
         }
@@ -565,7 +566,10 @@ fun HomeScreen(
                             }
 
                             // ── Presence avatars ─ bottom-right corner ────────────────
-                            val myUid = remember { app.ak25.pocketflow.storage.LocalStorage.loadString("appwrite_user_id") ?: "" }
+                            val myUid = remember {
+                                app.ak25.pocketflow.storage.LocalStorage.loadString("supabase_user_id")
+                                    ?: app.ak25.pocketflow.storage.LocalStorage.loadString("appwrite_user_id") ?: ""
+                            }
                             val allMembers = remember(workflow.membersJson) {
                                 try {
                                     val arr = Json.parseToJsonElement(workflow.membersJson).jsonArray
@@ -775,7 +779,8 @@ fun HomeScreen(
                         Spacer(modifier = Modifier.height(12.dp))
 
                         // Delete (owner) / Leave (member) option
-                        val myUid = app.ak25.pocketflow.storage.LocalStorage.loadString("appwrite_user_id").orEmpty()
+                        val myUid = (app.ak25.pocketflow.storage.LocalStorage.loadString("supabase_user_id")
+                            ?: app.ak25.pocketflow.storage.LocalStorage.loadString("appwrite_user_id")).orEmpty()
                         val isOwner = workflow.ownerUserId.isBlank() || workflow.ownerUserId == myUid
                         Surface(
                             onClick = {
@@ -971,7 +976,7 @@ fun HomeScreen(
                 controller.addSharedWorkflow(shareInfo.workflowId, shareInfo.workflowName)
             },
             onNeedSignIn = {
-                // Stored session is stale/invalid → Appwrite treats us as a guest,
+                // Stored session is stale/invalid → treated as guest,
                 // so we can't read any workflow docs. Route to the sign-in prompt.
                 showJoinSheet = false
                 showGuestJoinSheet = true

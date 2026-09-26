@@ -24,9 +24,9 @@ import app.ak25.pocketflow.services.Env
  *
  * Storage strategy:
  *  • Every mutation writes to LocalStorage immediately (fast, offline-safe).
- *  • Every mutation also fires an async Appwrite upsert (cloud sync).
- *  • On init: loads from Appwrite first (latest data), falls back to LocalStorage.
- *  • AppwriteRealtimeService pushes external changes back into _workflows (collaboration).
+ *  • Every mutation also fires an async Supabase upsert (cloud sync).
+ *  • On init: loads from Supabase first (latest data), falls back to LocalStorage.
+ *  • SupabaseRealtimeService pushes external changes back into _workflows (collaboration).
  */
 class WorkflowController {
 
@@ -42,7 +42,7 @@ class WorkflowController {
 
     /**
      * Real-time node-level presence — who is holding/dragging which node.
-     * Keyed by userId. Updated by polling Appwrite Presences every 3s.
+     * Keyed by userId.
      */
     private val _nodePresences = MutableStateFlow<List<app.ak25.pocketflow.services.NodePresenceState>>(emptyList())
     val nodePresences: StateFlow<List<app.ak25.pocketflow.services.NodePresenceState>> = _nodePresences.asStateFlow()
@@ -85,11 +85,15 @@ class WorkflowController {
     private val json = Json { ignoreUnknownKeys = true; coerceInputValues = true }
     private val store = app.ak25.pocketflow.storage.LocalStorage
 
-    /** Guest users keep workflows local-only (no Appwrite sync). */
+    private fun currentUserId(): String = store.loadString("supabase_user_id") ?: store.loadString("appwrite_user_id").orEmpty()
+    private fun currentJwt(): String = store.loadString("supabase_jwt") ?: store.loadString("appwrite_jwt").orEmpty()
+    private fun currentSessionId(): String = store.loadString("supabase_session_id") ?: store.loadString("appwrite_session_id").orEmpty()
+
+    /** Guest users keep workflows local-only (no Supabase sync). */
     private val isGuest: Boolean
         get() = app.ak25.pocketflow.storage.LocalStorage.loadString("is_guest") == "true"
 
-    // Debounce job for position/drag updates — avoids spamming Appwrite on every frame
+    // Debounce job for position/drag updates — avoids spamming Supabase on every frame
     private var positionSyncJob: Job? = null
     // Polling job for node-level presences
     private var presencePollJob: Job? = null
@@ -98,7 +102,7 @@ class WorkflowController {
         // 1. Load from LocalStorage immediately (fast, offline-safe)
         loadFromLocal()
 
-        // 2. Then refresh from Appwrite in the background (skipped for guests — local-only)
+        // 2. Then refresh from Supabase in the background (skipped for guests — local-only)
         scope.launch {
             refreshFromCloud()
         }
@@ -127,7 +131,7 @@ class WorkflowController {
         }
     }
 
-    /** Call this after login to pull workflows from Appwrite and push any local-only ones up. */
+    /** Call this after login to pull workflows from Supabase and push any local-only ones up. */
     fun syncWithCloud() {
         scope.launch { refreshFromCloud() }
     }
@@ -135,7 +139,7 @@ class WorkflowController {
     /**
      * Wipe the local workflow cache (in-memory + persisted). Called on sign-out
      * so a subsequent guest session never sees the previous user's workflows.
-     * The user's workflows remain in Appwrite and are re-pulled on next login.
+     * The user's workflows remain in Supabase and are re-pulled on next login.
      */
     fun clearLocalWorkflows() {
         _workflows.value = emptyList()
@@ -145,7 +149,7 @@ class WorkflowController {
     }
 
     private suspend fun refreshFromCloud() {
-        // Guests keep workflows local-only — never pull from or push to Appwrite.
+        // Guests keep workflows local-only — never pull from or push to Supabase.
         if (isGuest) return
 
         // Retry the fetch briefly: right after login the user's JWT/session may
@@ -209,16 +213,15 @@ class WorkflowController {
     }
 
     /**
-     * Upsert a workflow to Appwrite owned by the current user.
+     * Upsert a workflow to Supabase owned by the current user.
      * Waits until the logged-in user's credentials are persisted (they may not
      * be available the instant after login), then pushes with their userId.
      */
     private suspend fun pushToCloud(wf: Workflow) {
-        val store = app.ak25.pocketflow.storage.LocalStorage
         repeat(6) { attempt ->
-            val uid = store.loadString("appwrite_user_id").orEmpty()
-            val jwt = store.loadString("appwrite_jwt").orEmpty()
-            val session = store.loadString("appwrite_session_id").orEmpty()
+            val uid = currentUserId()
+            val jwt = currentJwt()
+            val session = currentSessionId()
             if (uid.isNotEmpty() && (jwt.isNotEmpty() || session.isNotEmpty())) {
                 SupabaseRepository.upsertWorkflow(wf.copy(ownerUserId = uid))
                 return
@@ -249,7 +252,7 @@ class WorkflowController {
             workflow.nodes.forEach { node -> node.notes.forEach { seenNoteKeys.add("${workflow.id}|${it.id}") } }
             return
         }
-        val myUid = app.ak25.pocketflow.storage.LocalStorage.loadString("appwrite_user_id").orEmpty()
+        val myUid = currentUserId()
         workflow.nodes.forEach { node ->
             node.notes.forEach { note ->
                 val key = "${workflow.id}|${note.id}"
@@ -319,7 +322,7 @@ class WorkflowController {
 
     /**
      * Debounced cloud sync — used for position updates during drag.
-     * Waits 600ms after the last call before writing to Appwrite,
+     * Waits 600ms after the last call before writing to Supabase,
      * so dragging a node doesn't spam hundreds of API calls.
      */
     private fun syncLocalAndDebouncedCloud() {
@@ -350,11 +353,11 @@ class WorkflowController {
         }
     }
 
-    // ─── Public API (unchanged surface, now also syncs to Appwrite) ───────────
+    // ─── Public API (syncs to Supabase) ───────────
 
     fun createWorkflow(name: String) {
         val cleanName = name.trim().take(20).ifEmpty { "Untitled Workflow" }
-        val uid = store.loadString("appwrite_user_id").orEmpty()
+        val uid = currentUserId()
         val userName = store.loadString("user_name").orEmpty()
         val email = store.loadString("user_email").orEmpty()
         val code = app.ak25.pocketflow.services.WorkflowShareRepository.generateJoinCode()
@@ -422,7 +425,7 @@ class WorkflowController {
         if (isGuest) return
 
         // ── Immediately seed MY OWN avatar (zero-network, instant) ───────────
-        val myUid  = app.ak25.pocketflow.storage.LocalStorage.loadString("appwrite_user_id") ?: ""
+        val myUid  = currentUserId()
         val myName = app.ak25.pocketflow.storage.LocalStorage.loadString("user_name") ?: "Me"
         if (myUid.isNotEmpty() && _memberPresences.value.none { it.userId == myUid }) {
             _memberPresences.value = listOf(
@@ -495,7 +498,7 @@ class WorkflowController {
      *
      * Strategy:
      * 1. Insert a placeholder immediately → user sees the card at once.
-     * 2. Fetch the real workflow from Appwrite in background.
+     * 2. Fetch the real workflow from Supabase in background.
      * 3. Replace placeholder with real data (name, nodes, etc.).
      */
     fun addSharedWorkflow(workflowId: String, workflowName: String = "Shared Workflow") {
@@ -553,7 +556,7 @@ class WorkflowController {
     fun ensurePresenceJoined() {
         if (isGuest) return
         val wf = _currentWorkflow.value ?: return
-        val myUid = store.loadString("appwrite_user_id").orEmpty()
+        val myUid = currentUserId()
         val myName = store.loadString("user_name") ?: "Me"
         if (myUid.isEmpty()) return
 
@@ -597,7 +600,7 @@ class WorkflowController {
         ensurePresenceJoined()
         currentLocalAction = NodeAction.TOUCHING
         currentLocalNodeId = ""
-        val uid = store.loadString("appwrite_user_id").orEmpty()
+        val uid = currentUserId()
         val name = store.loadString("user_name").orEmpty()
         scope.launch {
             SupabaseRealtimeService.updateMyPresence(
@@ -617,7 +620,7 @@ class WorkflowController {
         ensurePresenceJoined()
         currentLocalAction = NodeAction.INSPECTING
         currentLocalNodeId = nodeId
-        val uid = store.loadString("appwrite_user_id").orEmpty()
+        val uid = currentUserId()
         val name = store.loadString("user_name").orEmpty()
         scope.launch {
             SupabaseRealtimeService.updateMyPresence(
@@ -635,7 +638,7 @@ class WorkflowController {
         ensurePresenceJoined()
         currentLocalAction = NodeAction.OPEN_NODE
         currentLocalNodeId = nodeId
-        val uid = store.loadString("appwrite_user_id").orEmpty()
+        val uid = currentUserId()
         val name = store.loadString("user_name").orEmpty()
         scope.launch {
             SupabaseRealtimeService.updateMyPresence(
@@ -652,7 +655,7 @@ class WorkflowController {
         if (isGuest) return
         currentLocalAction = NodeAction.VIEWING
         currentLocalNodeId = ""
-        val uid = store.loadString("appwrite_user_id").orEmpty()
+        val uid = currentUserId()
         val name = store.loadString("user_name").orEmpty()
         scope.launch {
             SupabaseRealtimeService.updateMyPresence(
@@ -670,7 +673,7 @@ class WorkflowController {
         ensurePresenceJoined()
         currentLocalAction = NodeAction.RUNNING
         currentLocalNodeId = nodeId
-        val uid = store.loadString("appwrite_user_id").orEmpty()
+        val uid = currentUserId()
         val name = store.loadString("user_name").orEmpty()
         scope.launch {
             SupabaseRealtimeService.updateMyPresence(
@@ -688,7 +691,7 @@ class WorkflowController {
         ensurePresenceJoined()
         currentLocalAction = NodeAction.DRAGGING
         currentLocalNodeId = nodeId
-        val uid = store.loadString("appwrite_user_id").orEmpty()
+        val uid = currentUserId()
         val name = store.loadString("user_name").orEmpty()
         scope.launch {
             SupabaseRealtimeService.updateMyPresence(
@@ -711,7 +714,7 @@ class WorkflowController {
         val now = getCurrentTimeMillis()
         if (now - lastNodeDragBroadcast < 120) return
         lastNodeDragBroadcast = now
-        val uid = store.loadString("appwrite_user_id").orEmpty()
+        val uid = currentUserId()
         val name = store.loadString("user_name").orEmpty()
         scope.launch {
             SupabaseRealtimeService.updateMyPresence(
@@ -730,7 +733,7 @@ class WorkflowController {
         if (isGuest) return
         currentLocalAction = NodeAction.VIEWING
         currentLocalNodeId = nodeId
-        val uid = store.loadString("appwrite_user_id").orEmpty()
+        val uid = currentUserId()
         val name = store.loadString("user_name").orEmpty()
         scope.launch {
             SupabaseRealtimeService.updateMyPresence(
@@ -748,7 +751,7 @@ class WorkflowController {
         ensurePresenceJoined()
         currentLocalAction = NodeAction.HOLDING
         currentLocalNodeId = nodeId
-        val uid = store.loadString("appwrite_user_id").orEmpty()
+        val uid = currentUserId()
         val name = store.loadString("user_name").orEmpty()
         scope.launch {
             SupabaseRealtimeService.updateMyPresence(
@@ -766,7 +769,7 @@ class WorkflowController {
         ensurePresenceJoined()
         currentLocalAction = NodeAction.SELECTING
         currentLocalNodeId = nodeId
-        val uid = store.loadString("appwrite_user_id").orEmpty()
+        val uid = currentUserId()
         val name = store.loadString("user_name").orEmpty()
         scope.launch {
             SupabaseRealtimeService.updateMyPresence(
@@ -864,13 +867,12 @@ class WorkflowController {
 
     /**
      * Add a collaboration note to a node. Records the current member's name so
-     * the author can be shown next to the message. Persists + syncs to Appwrite.
+     * the author can be shown next to the message. Persists + syncs to Supabase.
      */
     fun addNodeNote(nodeId: String, text: String) {
         val trimmed = text.trim()
         if (trimmed.isEmpty()) return
-        val store = app.ak25.pocketflow.storage.LocalStorage
-        val myUserId = store.loadString("appwrite_user_id").orEmpty()
+        val myUserId = currentUserId()
         val myUserName = store.loadString("user_name").orEmpty().ifEmpty { "Member" }
         val note = app.ak25.pocketflow.models.NodeNote(
             id = IdGenerator.generate(),
@@ -1000,8 +1002,7 @@ class WorkflowController {
             return
         }
 
-        val store = app.ak25.pocketflow.storage.LocalStorage
-        val myUserId = store.loadString("appwrite_user_id").orEmpty()
+        val myUserId = currentUserId()
         val myUserName = store.loadString("user_name").orEmpty().ifEmpty { "A collaborator" }
         val workflowName = targetWorkflow.name.ifEmpty { "Shared Workflow" }
 
@@ -1099,8 +1100,7 @@ class WorkflowController {
         nodeTypeName: String
     ) {
         val targetWorkflow = _workflows.value.find { it.id == workflowId } ?: _currentWorkflow.value ?: return
-        val store = app.ak25.pocketflow.storage.LocalStorage
-        val myUserId = store.loadString("appwrite_user_id").orEmpty()
+        val myUserId = currentUserId()
         val myUserName = store.loadString("user_name").orEmpty().ifEmpty { "A collaborator" }
         val workflowName = targetWorkflow.name.ifEmpty { "Shared Workflow" }
 
@@ -1292,7 +1292,7 @@ class WorkflowController {
 
     /**
      * Leave a shared workflow. Removes it from this user's dashboard locally and
-     * removes the current user from the workflow's membersJson on Appwrite.
+     * removes the current user from the workflow's membersJson on Supabase.
      * Only meant for non-owner members (the owner uses deleteWorkflow).
      */
     fun leaveWorkflow(workflowId: String) {
@@ -1301,7 +1301,7 @@ class WorkflowController {
         if (_currentWorkflow.value?.id == workflowId) _currentWorkflow.value = null
         saveToLocal(_workflows.value)
         if (!isGuest) {
-            val uid = app.ak25.pocketflow.storage.LocalStorage.loadString("appwrite_user_id").orEmpty()
+            val uid = currentUserId()
             scope.launch {
                 app.ak25.pocketflow.services.WorkflowShareRepository.removeMemberFromShare(workflowId, uid)
             }
@@ -1358,7 +1358,7 @@ class WorkflowController {
 
         val current = _currentWorkflow.value
         if (current != null && current.nodes.any { it.id == nodeId }) {
-            // Node lives in the active workflow — updateCurrent triggers syncAndSave → Appwrite
+            // Node lives in the active workflow — updateCurrent triggers syncAndSave → Supabase
             updateCurrent(current.copy(nodes = current.nodes.map {
                 if (it.id == nodeId) patchNode(it) else it
             }.toMutableList()))

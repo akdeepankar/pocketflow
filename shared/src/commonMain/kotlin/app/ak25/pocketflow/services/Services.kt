@@ -132,11 +132,11 @@ class ExecutionEngine(private val controller: WorkflowController) {
         // Track the latest task ID so we can persist it
         var latestJobId: String? = node.jobId ?: node.params["jobId"]
 
-        // Setup callbacks — persist jobId to Appwrite immediately on task creation
+        // Setup callbacks — persist jobId to Supabase immediately on task creation
         runwayService.onTaskIdGenerated = { taskId ->
             latestJobId = taskId
             controller.updateNodeParams(nodeId, "jobId", taskId)
-            // Also persist via updateNodeStatus so it reaches Appwrite
+            // Also persist via updateNodeStatus so it reaches Supabase
             controller.updateNodeStatus(nodeId, NodeStatus.RUNNING, jobId = taskId)
         }
         val generatedRemoteUrls = mutableListOf<String>()

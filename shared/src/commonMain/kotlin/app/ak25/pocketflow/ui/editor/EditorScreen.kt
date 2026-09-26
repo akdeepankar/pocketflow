@@ -104,7 +104,8 @@ fun EditorScreen(
     val nodePresences by controller.nodePresences.collectAsState()
     val memberPresences by controller.memberPresences.collectAsState()
     val incomingNote by controller.incomingNote.collectAsState()
-    val myUid = app.ak25.pocketflow.storage.LocalStorage.loadString("appwrite_user_id").orEmpty()
+    val myUid = (app.ak25.pocketflow.storage.LocalStorage.loadString("supabase_user_id")
+        ?: app.ak25.pocketflow.storage.LocalStorage.loadString("appwrite_user_id")).orEmpty()
     val coroutineScope = rememberCoroutineScope()
 
     // Auto-dismiss incoming note snackbar after a few seconds
@@ -828,7 +829,10 @@ fun EditorScreen(
                     // Hidden for guest users (workflows are local-only, no collaboration).
                     if (!isGuest) {
                     var showMembersSheet by remember { mutableStateOf(false) }
-                    val myUid = remember { app.ak25.pocketflow.storage.LocalStorage.loadString("appwrite_user_id") ?: "" }
+                    val myUid = remember {
+                        app.ak25.pocketflow.storage.LocalStorage.loadString("supabase_user_id")
+                            ?: app.ak25.pocketflow.storage.LocalStorage.loadString("appwrite_user_id") ?: ""
+                    }
                     
                     val allMembers = remember(workflow, memberPresences, myUid) {
                         val membersList = try {
@@ -911,7 +915,8 @@ fun EditorScreen(
                                 coroutineScope.launch {
                                     try {
                                         controller.ensurePresenceJoined()
-                                        val uid = app.ak25.pocketflow.storage.LocalStorage.loadString("appwrite_user_id").orEmpty()
+                                        val uid = app.ak25.pocketflow.storage.LocalStorage.loadString("supabase_user_id")
+                                            ?: app.ak25.pocketflow.storage.LocalStorage.loadString("appwrite_user_id").orEmpty()
                                         val name = app.ak25.pocketflow.storage.LocalStorage.loadString("user_name") ?: "Me"
                                         if (uid.isNotEmpty()) {
                                             app.ak25.pocketflow.services.SupabaseRealtimeService.refreshOnlinePresence(
