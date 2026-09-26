@@ -150,13 +150,13 @@ struct StepProgressTickView: View {
                         } else if isCurrent {
                             ZStack {
                                 Circle()
-                                    .fill(accentColorForNodeType(nodeType).opacity(0.18))
-                                    .frame(width: compact ? 18 : 24, height: compact ? 18 : 24)
+                                    .fill(accentColorForNodeType(nodeType).opacity(0.16))
+                                    .frame(width: compact ? 20 : 26, height: compact ? 20 : 26)
                                 ProgressView()
                                     .progressViewStyle(CircularProgressViewStyle(tint: accentColorForNodeType(nodeType)))
-                                    .scaleEffect(compact ? 0.65 : 0.85)
+                                    .scaleEffect(compact ? 0.75 : 0.95)
                                 Image(systemName: iconForNodeType(nodeType))
-                                    .font(.system(size: compact ? 7 : 9, weight: .bold))
+                                    .font(.system(size: compact ? 8 : 10, weight: .bold))
                                     .foregroundColor(accentColorForNodeType(nodeType))
                             }
                         } else if isFinished && !isSuccess && index == completedSteps {
@@ -200,11 +200,16 @@ struct LockScreenLiveActivityView: View {
             // Header: Icon + Titles + Step Badge
             HStack(spacing: 10) {
                 ZStack {
-                    RoundedRectangle(cornerRadius: 10)
+                    Circle()
                         .fill(accentColorForNodeType(context.state.currentNodeType).opacity(0.18))
                         .frame(width: 38, height: 38)
+                    if !context.state.isFinished {
+                        ProgressView()
+                            .progressViewStyle(CircularProgressViewStyle(tint: accentColorForNodeType(context.state.currentNodeType)))
+                            .scaleEffect(1.15)
+                    }
                     Image(systemName: iconForNodeType(context.state.currentNodeType))
-                        .font(.system(size: 17, weight: .bold))
+                        .font(.system(size: 16, weight: .bold))
                         .foregroundColor(accentColorForNodeType(context.state.currentNodeType))
                 }
 
