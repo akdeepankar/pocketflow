@@ -131,6 +131,18 @@ class ExecutionEngine(private val controller: WorkflowController) {
         // Track the latest task ID so we can persist it
         var latestJobId: String? = node.jobId ?: node.params["jobId"]
 
+        // Setup Live Activity metadata for server-side OneSignal push integration
+        runwayService.activeLiveActivityMetadata = kotlinx.serialization.json.buildJsonObject {
+            put("activityId", kotlinx.serialization.json.JsonPrimitive(effectiveActivityKey))
+            put("workflowId", kotlinx.serialization.json.JsonPrimitive(workflow.id))
+            put("workflowName", kotlinx.serialization.json.JsonPrimitive(workflow.name))
+            put("nodeTitle", kotlinx.serialization.json.JsonPrimitive(displayTitle))
+            put("nodeType", kotlinx.serialization.json.JsonPrimitive(node.type.name))
+            put("currentStep", kotlinx.serialization.json.JsonPrimitive(currentStep))
+            put("totalSteps", kotlinx.serialization.json.JsonPrimitive(totalSteps))
+            put("stepNodeTypes", kotlinx.serialization.json.JsonArray(stepNodeTypes.map { kotlinx.serialization.json.JsonPrimitive(it) }))
+        }
+
         // Setup callbacks — persist jobId to Supabase immediately on task creation
         runwayService.onTaskIdGenerated = { taskId ->
             latestJobId = taskId
@@ -293,6 +305,7 @@ class ExecutionEngine(private val controller: WorkflowController) {
             if (activityKey == null) {
                 app.ak25.pocketflow.storage.LocalStorage.endBackgroundTask()
             }
+            runwayService.activeLiveActivityMetadata = null
             runwayService.onTaskIdGenerated = null
             runwayService.onRemoteUrlGenerated = null
             activeRuns.remove(nodeId)

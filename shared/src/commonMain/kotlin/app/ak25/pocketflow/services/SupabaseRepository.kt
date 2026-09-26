@@ -301,12 +301,21 @@ object SupabaseRepository {
 
     suspend fun invokeRunwayFunction(
         endpoint: String,
-        payload: JsonObject
+        payload: JsonObject,
+        liveActivity: JsonObject? = null,
+        recipientUserId: String? = null
     ): String? = withContext(Dispatchers.IO) {
         try {
             val body = buildJsonObject {
                 put("endpoint", endpoint)
                 put("payload", payload)
+                if (liveActivity != null) {
+                    put("liveActivity", liveActivity)
+                }
+                val uid = recipientUserId ?: userId()
+                if (uid.isNotBlank()) {
+                    put("recipientUserId", uid)
+                }
             }
             val response = supabaseClient.functions.invoke("runway-generate", body.toString())
             val responseText = response.bodyAsText()

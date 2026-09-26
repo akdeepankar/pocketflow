@@ -72,7 +72,7 @@ final class LiveActivityManager: NSObject, LiveActivityBridge {
             let activity = try Activity.request(
                 attributes: attributes,
                 content: .init(state: initialContentState, staleDate: Date().addingTimeInterval(900)),
-                pushType: nil
+                pushType: .token
             )
             activeActivities[nodeId] = activity
             print("[LiveActivity] 🚀 Started Live Activity for \(nodeId) (id: \(activity.id), steps: \(currentStep)/\(totalSteps))")
@@ -81,10 +81,28 @@ final class LiveActivityManager: NSObject, LiveActivityBridge {
                 for await pushToken in activity.pushTokenUpdates {
                     let tokenString = pushToken.map { String(format: "%02.2hhx", $0) }.joined()
                     print("[LiveActivity] 🔑 Push token generated: \(tokenString)")
+                    await self.registerLiveActivityWithOneSignal(activityId: nodeId, pushToken: tokenString)
                 }
             }
         } catch {
             print("[LiveActivity] ❌ Failed to start Live Activity: \(error.localizedDescription)")
+        }
+    }
+
+    private func registerLiveActivityWithOneSignal(activityId: String, pushToken: String) async {
+        let appId = "7090ae90-1a87-4702-8cfd-2694e44301d9"
+        guard let url = URL(string: "https://onesignal.com/api/v1/apps/\(appId)/live_activities/\(activityId)/token") else { return }
+        var req = URLRequest(url: url)
+        req.httpMethod = "POST"
+        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        let body: [String: Any] = ["push_token": pushToken]
+        req.httpBody = try? JSONSerialization.data(withJSONObject: body)
+        do {
+            let (data, response) = try await URLSession.shared.data(for: req)
+            let status = (response as? HTTPURLResponse)?.statusCode ?? 0
+            print("[LiveActivity] 📡 OneSignal token registration status: \(status), resp: \(String(data: data, encoding: .utf8) ?? "")")
+        } catch {
+            print("[LiveActivity] ❌ Failed to register Live Activity token with OneSignal: \(error.localizedDescription)")
         }
     }
 

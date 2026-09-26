@@ -69,6 +69,7 @@ class RunwayService {
     }
 
     var onTaskIdGenerated: ((String) -> Unit)? = null
+    var activeLiveActivityMetadata: JsonObject? = null
 
     /**
      * Submit a Runway task.
@@ -76,8 +77,6 @@ class RunwayService {
      * Routing:
      *   1. Try via Supabase Edge Function `runway-generate` (API key stays server-side).
      *   2. If that fails (JWT absent, function not deployed), fall back to direct call.
-     *
-     * Polling still happens locally — only the initial POST is routed here.
      */
     private suspend fun runwayFetch(endpoint: String, body: JsonObject): JsonObject {
         // ── Path 1: via Supabase Function ──────────────────────────────────────
@@ -85,7 +84,11 @@ class RunwayService {
             ?: app.ak25.pocketflow.storage.LocalStorage.loadString("appwrite_jwt")
         if (!jwt.isNullOrEmpty()) {
             try {
-                val jobId = SupabaseRepository.invokeRunwayFunction(endpoint, body)
+                val jobId = SupabaseRepository.invokeRunwayFunction(
+                    endpoint = endpoint,
+                    payload = body,
+                    liveActivity = activeLiveActivityMetadata
+                )
                 if (jobId != null) {
                     onTaskIdGenerated?.invoke(jobId)
                     // Return a minimal JsonObject matching what callers expect
