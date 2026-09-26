@@ -1,22 +1,12 @@
 import SwiftUI
 import UserNotifications
 import Shared
-#if canImport(OneSignalFramework)
-import OneSignalFramework
-#endif
 
 class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate {
     func application(
         _ application: UIApplication,
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil
     ) -> Bool {
-        #if canImport(OneSignalFramework)
-        OneSignal.initialize("7090ae90-1a87-4702-8cfd-2694e44301d9", withLaunchOptions: launchOptions)
-        OneSignal.Notifications.requestPermission({ accepted in
-            print("[OneSignal] Notification permission granted: \(accepted)")
-        }, fallbackToSettings: false)
-        #endif
-
         let center = UNUserNotificationCenter.current()
         center.delegate = self
         center.requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in

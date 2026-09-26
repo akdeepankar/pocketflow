@@ -60,12 +60,6 @@ struct PocketFlowLiveActivityWidget: Widget {
                                 isSuccess: context.state.isSuccess,
                                 compact: true
                             )
-                        } else if !context.state.isFinished {
-                            ProgressView(
-                                timerInterval: context.state.timestamp...context.state.timestamp.addingTimeInterval(45),
-                                countsDown: false
-                            )
-                            .progressViewStyle(LinearProgressViewStyle(tint: accentColorForNodeType(context.state.currentNodeType)))
                         }
                         Text(context.state.status)
                             .font(.system(size: 11, weight: .medium))
@@ -254,11 +248,8 @@ struct LockScreenLiveActivityView: View {
                 )
                 .padding(.vertical, 2)
             } else if !context.state.isFinished {
-                ProgressView(
-                    timerInterval: context.state.timestamp...context.state.timestamp.addingTimeInterval(45),
-                    countsDown: false
-                )
-                .progressViewStyle(LinearProgressViewStyle(tint: accentColorForNodeType(context.state.currentNodeType)))
+                ProgressView()
+                    .progressViewStyle(LinearProgressViewStyle(tint: accentColorForNodeType(context.state.currentNodeType)))
             }
 
             // Status message

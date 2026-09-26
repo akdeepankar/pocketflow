@@ -2,10 +2,6 @@ import Foundation
 import ActivityKit
 import Shared
 
-#if canImport(OneSignalFramework)
-import OneSignalFramework
-#endif
-
 @MainActor
 final class LiveActivityManager: NSObject, LiveActivityBridge {
     static let shared = LiveActivityManager()
@@ -94,27 +90,24 @@ final class LiveActivityManager: NSObject, LiveActivityBridge {
     }
 
     private func registerLiveActivityWithOneSignal(activityId: String, pushToken: String) async {
-        #if canImport(OneSignalFramework)
-        OneSignal.LiveActivities.enter(activityId, withToken: pushToken) { result in
-            print("[LiveActivity] 📡 OneSignal.LiveActivities.enter success for \(activityId)")
-        } withFailure: { error in
-            print("[LiveActivity] ❌ OneSignal.LiveActivities.enter error for \(activityId): \(String(describing: error))")
-        }
-        #endif
-
-        let appId = "7090ae90-1a87-4702-8cfd-2694e44301d9"
-        guard let url = URL(string: "https://api.onesignal.com/apps/\(appId)/live_activities/\(activityId)/token") else { return }
+        guard let url = URL(string: "\(SupabaseConfig.shared.URL)/functions/v1/runway-generate") else { return }
         var req = URLRequest(url: url)
         req.httpMethod = "POST"
         req.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        let body: [String: Any] = ["push_token": pushToken]
+        req.setValue(SupabaseConfig.shared.ANON_KEY, forHTTPHeaderField: "apikey")
+        req.setValue("Bearer \(SupabaseConfig.shared.ANON_KEY)", forHTTPHeaderField: "Authorization")
+        let body: [String: Any] = [
+            "action": "register_token",
+            "activityId": activityId,
+            "pushToken": pushToken
+        ]
         req.httpBody = try? JSONSerialization.data(withJSONObject: body)
         do {
             let (data, response) = try await URLSession.shared.data(for: req)
             let status = (response as? HTTPURLResponse)?.statusCode ?? 0
-            print("[LiveActivity] 📡 OneSignal REST registration status: \(status), resp: \(String(data: data, encoding: .utf8) ?? "")")
+            print("[LiveActivity] 📡 OneSignal token registration status: \(status), resp: \(String(data: data, encoding: .utf8) ?? "")")
         } catch {
-            print("[LiveActivity] ❌ Failed to register Live Activity token via REST: \(error.localizedDescription)")
+            print("[LiveActivity] ❌ Failed to register Live Activity token with OneSignal: \(error.localizedDescription)")
         }
     }
 
@@ -221,14 +214,6 @@ final class LiveActivityManager: NSObject, LiveActivityBridge {
             isSuccess: isSuccess,
             timestamp: Date()
         )
-
-        #if canImport(OneSignalFramework)
-        OneSignal.LiveActivities.exit(nodeId) { result in
-            print("[LiveActivity] 📡 OneSignal.LiveActivities.exit success for \(nodeId)")
-        } withFailure: { error in
-            print("[LiveActivity] ❌ OneSignal.LiveActivities.exit error for \(nodeId): \(String(describing: error))")
-        }
-        #endif
 
         Task {
             await activity.end(
