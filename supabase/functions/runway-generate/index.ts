@@ -27,20 +27,35 @@ Deno.serve(async (req) => {
   }
 
   const oneSignalRestKey = Deno.env.get("ONESIGNAL_REST_API_KEY") || "";
+  console.log(`[Runway] Config status: RUNWAY_API_KEY=OK, ONESIGNAL_REST_API_KEY=${oneSignalRestKey ? "OK" : "MISSING"}`);
 
-  let body;
+  let rawText = "";
   try {
-    body = await req.json();
+    rawText = await req.text();
   } catch (e) {
+    console.error("[Runway] ❌ Failed to read request text:", e);
+  }
+  console.log(`[Runway] Raw body received (${rawText.length} bytes):`, rawText.substring(0, 300));
+
+  let body: any;
+  try {
+    body = JSON.parse(rawText);
+    if (typeof body === "string") {
+      body = JSON.parse(body);
+    }
+  } catch (e) {
+    console.error("[Runway] ❌ Invalid JSON:", e);
     return new Response(
-      JSON.stringify({ success: false, error: "Invalid request body" }),
+      JSON.stringify({ success: false, error: "Invalid JSON request body" }),
       { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 
-  const { endpoint, payload, liveActivity, recipientUserId } = body;
+  const { endpoint, payload, liveActivity, recipientUserId } = body || {};
+  console.log(`[Runway] Parsed parameters: endpoint=${endpoint}, hasPayload=${!!payload}, hasLiveActivity=${!!liveActivity}, activityId=${liveActivity?.activityId}`);
 
   if (!endpoint || !payload) {
+    console.error(`[Runway] ❌ Missing 'endpoint' or 'payload'. endpoint=${endpoint}, payload=${JSON.stringify(payload)}`);
     return new Response(
       JSON.stringify({ success: false, error: "Missing 'endpoint' or 'payload' in request" }),
       { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
