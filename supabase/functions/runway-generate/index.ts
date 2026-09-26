@@ -111,7 +111,11 @@ export default {
               const liveActivityPayload = {
                 name: "PocketFlow Live Activity Completion",
                 event: "end",
-                dismiss_at: nowUnix + 5, // Dismiss from lock screen 5s after completion
+                dismissal_date: nowUnix + 5, // Dismiss from lock screen 5s after completion
+                priority: 10,
+                contents: {
+                  en: finalStatusText,
+                },
                 event_updates: {
                   status: finalStatusText,
                   nodeTitle: nodeTitle,

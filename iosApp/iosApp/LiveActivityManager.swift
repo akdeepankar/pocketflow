@@ -77,10 +77,18 @@ final class LiveActivityManager: NSObject, LiveActivityBridge {
             activeActivities[nodeId] = activity
             print("[LiveActivity] 🚀 Started Live Activity for \(nodeId) (id: \(activity.id), steps: \(currentStep)/\(totalSteps))")
 
+            if let pushToken = activity.pushToken {
+                let tokenString = pushToken.map { String(format: "%02.2hhx", $0) }.joined()
+                print("[LiveActivity] 🔑 Initial push token available: \(tokenString)")
+                Task {
+                    await self.registerLiveActivityWithOneSignal(activityId: nodeId, pushToken: tokenString)
+                }
+            }
+
             Task {
                 for await pushToken in activity.pushTokenUpdates {
                     let tokenString = pushToken.map { String(format: "%02.2hhx", $0) }.joined()
-                    print("[LiveActivity] 🔑 Push token generated: \(tokenString)")
+                    print("[LiveActivity] 🔑 Push token generated/updated: \(tokenString)")
                     await self.registerLiveActivityWithOneSignal(activityId: nodeId, pushToken: tokenString)
                 }
             }
