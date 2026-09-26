@@ -1,6 +1,8 @@
 import Foundation
 import ActivityKit
 import Shared
+import OneSignalFramework
+import OneSignalLiveActivities
 
 @MainActor
 final class LiveActivityManager: NSObject, LiveActivityBridge {
@@ -81,7 +83,7 @@ final class LiveActivityManager: NSObject, LiveActivityBridge {
                 for await pushToken in activity.pushTokenUpdates {
                     let tokenString = pushToken.map { String(format: "%02.2hhx", $0) }.joined()
                     print("[LiveActivity] 🔑 Push token generated: \(tokenString)")
-                    await self.registerLiveActivityWithOneSignal(activityId: nodeId, pushToken: tokenString)
+                    self.registerLiveActivityWithOneSignal(activityId: nodeId, pushToken: tokenString)
                 }
             }
         } catch {
@@ -89,25 +91,11 @@ final class LiveActivityManager: NSObject, LiveActivityBridge {
         }
     }
 
-    private func registerLiveActivityWithOneSignal(activityId: String, pushToken: String) async {
-        guard let url = URL(string: "\(SupabaseConfig.shared.URL)/functions/v1/runway-generate") else { return }
-        var req = URLRequest(url: url)
-        req.httpMethod = "POST"
-        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        req.setValue(SupabaseConfig.shared.ANON_KEY, forHTTPHeaderField: "apikey")
-        req.setValue("Bearer \(SupabaseConfig.shared.ANON_KEY)", forHTTPHeaderField: "Authorization")
-        let body: [String: Any] = [
-            "action": "register_token",
-            "activityId": activityId,
-            "pushToken": pushToken
-        ]
-        req.httpBody = try? JSONSerialization.data(withJSONObject: body)
-        do {
-            let (data, response) = try await URLSession.shared.data(for: req)
-            let status = (response as? HTTPURLResponse)?.statusCode ?? 0
-            print("[LiveActivity] 📡 OneSignal token registration status: \(status), resp: \(String(data: data, encoding: .utf8) ?? "")")
-        } catch {
-            print("[LiveActivity] ❌ Failed to register Live Activity token with OneSignal: \(error.localizedDescription)")
+    private func registerLiveActivityWithOneSignal(activityId: String, pushToken: String) {
+        OneSignal.LiveActivities.enter(activityId, withToken: pushToken) { result in
+            print("[LiveActivity] 📡 OneSignal Live Activity registered successfully for \(activityId), result: \(String(describing: result))")
+        } withFailure: { error in
+            print("[LiveActivity] ❌ Failed to register Live Activity token with OneSignal: \(String(describing: error))")
         }
     }
 

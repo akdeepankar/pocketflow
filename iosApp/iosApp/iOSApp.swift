@@ -1,12 +1,18 @@
 import SwiftUI
 import UserNotifications
 import Shared
+import OneSignalFramework
+import OneSignalLiveActivities
 
 class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate {
     func application(
         _ application: UIApplication,
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil
     ) -> Bool {
+        // Initialize OneSignal
+        OneSignal.Debug.setLogLevel(.LL_VERBOSE)
+        OneSignal.initialize("7090ae90-1a87-4702-8cfd-2694e44301d9", withLaunchOptions: launchOptions)
+
         let center = UNUserNotificationCenter.current()
         center.delegate = self
         center.requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
