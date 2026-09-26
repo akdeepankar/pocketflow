@@ -69,8 +69,6 @@ class ExecutionEngine(private val controller: WorkflowController) {
         activeRuns.add(nodeId)
         if (activityKey == null) {
             app.ak25.pocketflow.storage.LocalStorage.beginBackgroundTask("pocketflow_node_$nodeId")
-        } else {
-            app.ak25.pocketflow.storage.LocalStorage.beginBackgroundTask("pocketflow_step_${currentStep}_$nodeId")
         }
         
         val workflow = controller.workflows.value.find { wf -> wf.nodes.any { it.id == nodeId } } ?: run {

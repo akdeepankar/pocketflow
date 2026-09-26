@@ -193,33 +193,36 @@ actual object LocalStorage {
     }
 
     private var activeBgTaskId: platform.UIKit.UIBackgroundTaskIdentifier = platform.UIKit.UIBackgroundTaskInvalid
+    private var bgTaskCount: Int = 0
+    private val bgLock = platform.Foundation.NSLock()
 
     actual fun beginBackgroundTask(name: String) {
         try {
-            platform.darwin.dispatch_async(platform.darwin.dispatch_get_main_queue()) {
-                try {
-                    if (activeBgTaskId != platform.UIKit.UIBackgroundTaskInvalid) {
-                        val oldId = activeBgTaskId
-                        activeBgTaskId = platform.UIKit.UIBackgroundTaskInvalid
-                        platform.UIKit.UIApplication.sharedApplication.endBackgroundTask(oldId)
-                        println("[iOS-Background] 🔄 Rotated background task (ended old id=$oldId)")
-                    }
-
+            bgLock.lock()
+            try {
+                bgTaskCount++
+                if (activeBgTaskId == platform.UIKit.UIBackgroundTaskInvalid) {
                     var newTaskId: platform.UIKit.UIBackgroundTaskIdentifier = platform.UIKit.UIBackgroundTaskInvalid
                     newTaskId = platform.UIKit.UIApplication.sharedApplication.beginBackgroundTaskWithName(name) {
                         println("[iOS-Background] ⚠️ Background task '$name' (id=$newTaskId) expired by iOS watchdog.")
-                        platform.darwin.dispatch_async(platform.darwin.dispatch_get_main_queue()) {
+                        bgLock.lock()
+                        try {
                             if (activeBgTaskId == newTaskId) {
                                 activeBgTaskId = platform.UIKit.UIBackgroundTaskInvalid
+                                bgTaskCount = 0
                             }
                             platform.UIKit.UIApplication.sharedApplication.endBackgroundTask(newTaskId)
+                        } finally {
+                            bgLock.unlock()
                         }
                     }
                     activeBgTaskId = newTaskId
-                    println("[iOS-Background] 🛡️ Started background task '$name' (id=$newTaskId)")
-                } catch (e: Exception) {
-                    println("[iOS-Background] ⚠️ beginBackgroundTask internal error: ${e.message}")
+                    println("[iOS-Background] 🛡️ Started background task '$name' (id=$newTaskId, count=$bgTaskCount)")
+                } else {
+                    println("[iOS-Background] 🛡️ Retained existing background task (id=$activeBgTaskId, count=$bgTaskCount) for '$name'")
                 }
+            } finally {
+                bgLock.unlock()
             }
         } catch (e: Exception) {
             println("[iOS-Background] ⚠️ beginBackgroundTask error: ${e.message}")
@@ -228,17 +231,20 @@ actual object LocalStorage {
 
     actual fun endBackgroundTask() {
         try {
-            platform.darwin.dispatch_async(platform.darwin.dispatch_get_main_queue()) {
-                try {
-                    if (activeBgTaskId != platform.UIKit.UIBackgroundTaskInvalid) {
-                        val id = activeBgTaskId
-                        activeBgTaskId = platform.UIKit.UIBackgroundTaskInvalid
-                        platform.UIKit.UIApplication.sharedApplication.endBackgroundTask(id)
-                        println("[iOS-Background] 🏁 Ended background task (id=$id)")
-                    }
-                } catch (e: Exception) {
-                    println("[iOS-Background] ⚠️ endBackgroundTask internal error: ${e.message}")
+            bgLock.lock()
+            try {
+                if (bgTaskCount > 0) {
+                    bgTaskCount--
                 }
+                println("[iOS-Background] 🏁 Release background task requested (remaining count=$bgTaskCount, id=$activeBgTaskId)")
+                if (bgTaskCount == 0 && activeBgTaskId != platform.UIKit.UIBackgroundTaskInvalid) {
+                    val id = activeBgTaskId
+                    activeBgTaskId = platform.UIKit.UIBackgroundTaskInvalid
+                    platform.UIKit.UIApplication.sharedApplication.endBackgroundTask(id)
+                    println("[iOS-Background] 🏁 Fully ended background task (id=$id)")
+                }
+            } finally {
+                bgLock.unlock()
             }
         } catch (e: Exception) {
             println("[iOS-Background] ⚠️ endBackgroundTask error: ${e.message}")
