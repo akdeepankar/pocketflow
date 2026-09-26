@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "434590385318",
+    "project_id": "pocketflow-ak25",
+    "storage_bucket": "pocketflow-ak25.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:434590385318:android:8947a0d4c1b019112d2067",
+        "android_client_info": {
+          "package_name": "app.ak25.pocketflow"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBctkPckUZyvB7_nfZsiZasoO4Umladsuo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

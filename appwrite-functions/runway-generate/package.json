@@ -1,0 +1,7 @@
+{
+  "name": "runway-generate",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "PocketFlow Appwrite Function — proxies Runway API calls server-side",
+  "main": "src/index.js"
+}
