@@ -789,7 +789,7 @@ fun EditorScreen(
                 ) {
                     val isAnyNodeRunning = workflow?.nodes?.any { it.status == NodeStatus.RUNNING || it.status == NodeStatus.PENDING } == true
 
-                    // Overall Run button
+                    // Overall Run icon button
                     Surface(
                         onClick = {
                             if (isAnyNodeRunning) {
@@ -798,26 +798,19 @@ fun EditorScreen(
                                 showWorkflowRunSheet = true
                             }
                         },
-                        shape = RoundedCornerShape(12.dp),
-                        color = if (isAnyNodeRunning) Color(0xFFFF3B30).copy(alpha = 0.12f) else Color(0xFF007AFF),
+                        shape = CircleShape,
+                        color = if (isAnyNodeRunning) Color(0xFFFF3B30).copy(alpha = 0.15f) else Color(0xFF007AFF),
                         shadowElevation = if (isAnyNodeRunning) 0.dp else 2.dp,
-                        modifier = Modifier.height(36.dp)
+                        modifier = Modifier.size(36.dp)
                     ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier.fillMaxSize()
                         ) {
                             if (isAnyNodeRunning) {
                                 CircularProgressIndicator(
-                                    modifier = Modifier.size(13.dp),
+                                    modifier = Modifier.size(16.dp),
                                     strokeWidth = 2.dp,
-                                    color = Color(0xFFFF3B30)
-                                )
-                                Text(
-                                    "Stop",
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.Bold,
                                     color = Color(0xFFFF3B30)
                                 )
                             } else {
@@ -825,13 +818,7 @@ fun EditorScreen(
                                     imageVector = AppIcons.Play,
                                     contentDescription = "Run Workflow",
                                     tint = Color.White,
-                                    modifier = Modifier.size(13.dp)
-                                )
-                                Text(
-                                    "Run",
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color.White
+                                    modifier = Modifier.size(16.dp)
                                 )
                             }
                         }
