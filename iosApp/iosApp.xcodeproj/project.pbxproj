@@ -16,8 +16,20 @@
 		B3E2A11B1234567890ABCDEF /* AuthBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3E2A11C1234567890ABCDEF /* AuthBridge.swift */; };
 		B3E2A11F1234567890ABCDEF /* PocketFlowActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3E2A1201234567890ABCDEF /* PocketFlowActivityAttributes.swift */; };
 		B3E2A1211234567890ABCDEF /* LiveActivityManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3E2A1221234567890ABCDEF /* LiveActivityManager.swift */; };
-		B3E2A1231234567890ABCDEF /* PocketFlowLiveActivityWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3E2A1241234567890ABCDEF /* PocketFlowLiveActivityWidget.swift */; };
+		B3E2A1251234567890ABCDEF /* PocketFlowActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3E2A1201234567890ABCDEF /* PocketFlowActivityAttributes.swift */; };
+		B3E2A1261234567890ABCDEF /* PocketFlowLiveActivityWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3E2A1241234567890ABCDEF /* PocketFlowLiveActivityWidget.swift */; };
+		B3E2A1281234567890ABCDEF /* PocketFlowWidgets.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = B3E2A1271234567890ABCDEF /* PocketFlowWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		B3E2A12A1234567890ABCDEF /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = B3E2A1111234567890ABCDEF /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = B3E2A12C1234567890ABCDEF;
+			remoteInfo = PocketFlowWidgets;
+		};
+/* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
 		B3E2A1071234567890ABCDEF /* Embed Frameworks */ = {
@@ -29,6 +41,17 @@
 				B3E2A1061234567890ABCDEF /* Shared.framework in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		B3E2A1291234567890ABCDEF /* Embed App Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				B3E2A1281234567890ABCDEF /* PocketFlowWidgets.appex in Embed App Extensions */,
+			);
+			name = "Embed App Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXCopyFilesBuildPhase section */
@@ -44,6 +67,7 @@
 		B3E2A1201234567890ABCDEF /* PocketFlowActivityAttributes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PocketFlowActivityAttributes.swift; sourceTree = "<group>"; };
 		B3E2A1221234567890ABCDEF /* LiveActivityManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveActivityManager.swift; sourceTree = "<group>"; };
 		B3E2A1241234567890ABCDEF /* PocketFlowLiveActivityWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PocketFlowLiveActivityWidget.swift; sourceTree = "<group>"; };
+		B3E2A1271234567890ABCDEF /* PocketFlowWidgets.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = PocketFlowWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -52,6 +76,13 @@
 			buildActionMask = 2147483647;
 			files = (
 				B3E2A1041234567890ABCDEF /* Shared.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		B3E2A12E1234567890ABCDEF /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -94,6 +125,7 @@
 			isa = PBXGroup;
 			children = (
 				B3E2A1081234567890ABCDEF /* iosApp.app */,
+				B3E2A1271234567890ABCDEF /* PocketFlowWidgets.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -109,15 +141,33 @@
 				B3E2A1101234567890ABCDEF /* Sources */,
 				B3E2A1091234567890ABCDEF /* Frameworks */,
 				B3E2A1071234567890ABCDEF /* Embed Frameworks */,
+				B3E2A1291234567890ABCDEF /* Embed App Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				B3E2A12B1234567890ABCDEF /* PBXTargetDependency */,
 			);
 			name = iosApp;
 			productName = iosApp;
 			productReference = B3E2A1081234567890ABCDEF /* iosApp.app */;
 			productType = "com.apple.product-type.application";
+		};
+		B3E2A12C1234567890ABCDEF /* PocketFlowWidgets */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = B3E2A12F1234567890ABCDEF /* Build configuration list for PBXNativeTarget "PocketFlowWidgets" */;
+			buildPhases = (
+				B3E2A12D1234567890ABCDEF /* Sources */,
+				B3E2A12E1234567890ABCDEF /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = PocketFlowWidgets;
+			productName = PocketFlowWidgets;
+			productReference = B3E2A1271234567890ABCDEF /* PocketFlowWidgets.appex */;
+			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
 
@@ -130,6 +180,9 @@
 				LastUpgradeCheck = 1500;
 				TargetAttributes = {
 					B3E2A10E1234567890ABCDEF = {
+						CreatedOnToolsVersion = 15.0;
+					};
+					B3E2A12C1234567890ABCDEF = {
 						CreatedOnToolsVersion = 15.0;
 					};
 				};
@@ -148,6 +201,7 @@
 			projectRoot = "";
 			targets = (
 				B3E2A10E1234567890ABCDEF /* iosApp */,
+				B3E2A12C1234567890ABCDEF /* PocketFlowWidgets */,
 			);
 		};
 /* End PBXProject section */
@@ -186,11 +240,27 @@
 				B3E2A11B1234567890ABCDEF /* AuthBridge.swift in Sources */,
 				B3E2A11F1234567890ABCDEF /* PocketFlowActivityAttributes.swift in Sources */,
 				B3E2A1211234567890ABCDEF /* LiveActivityManager.swift in Sources */,
-				B3E2A1231234567890ABCDEF /* PocketFlowLiveActivityWidget.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		B3E2A12D1234567890ABCDEF /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B3E2A1251234567890ABCDEF /* PocketFlowActivityAttributes.swift in Sources */,
+				B3E2A1261234567890ABCDEF /* PocketFlowLiveActivityWidget.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		B3E2A12B1234567890ABCDEF /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = B3E2A12C1234567890ABCDEF /* PocketFlowWidgets */;
+			targetProxy = B3E2A12A1234567890ABCDEF /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		B3E2A1131234567890ABCDEF /* Debug */ = {
@@ -383,6 +453,58 @@
 			};
 			name = Release;
 		};
+		B3E2A1301234567890ABCDEF /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = WPGR2YT685;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = PocketFlowWidgets;
+				INFOPLIST_KEY_NSExtensionPointIdentifier = "com.apple.widgetkit-extension";
+				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
+				INFOPLIST_KEY_NSSupportsLiveActivitiesFrequentUpdates = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = app.ak25.pocketflow.PocketFlowWidgets;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		B3E2A1311234567890ABCDEF /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = WPGR2YT685;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = PocketFlowWidgets;
+				INFOPLIST_KEY_NSExtensionPointIdentifier = "com.apple.widgetkit-extension";
+				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
+				INFOPLIST_KEY_NSSupportsLiveActivitiesFrequentUpdates = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = app.ak25.pocketflow.PocketFlowWidgets;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -400,6 +522,15 @@
 			buildConfigurations = (
 				B3E2A1131234567890ABCDEF /* Debug */,
 				B3E2A1141234567890ABCDEF /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		B3E2A12F1234567890ABCDEF /* Build configuration list for PBXNativeTarget "PocketFlowWidgets" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B3E2A1301234567890ABCDEF /* Debug */,
+				B3E2A1311234567890ABCDEF /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

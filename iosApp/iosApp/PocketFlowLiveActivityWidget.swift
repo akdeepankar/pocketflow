@@ -56,21 +56,24 @@ struct PocketFlowLiveActivityWidget: Widget {
                 }
             } compactLeading: {
                 Image(systemName: iconForNodeType(context.attributes.nodeType))
-                    .font(.system(size: 12, weight: .bold))
+                    .font(.system(size: 13, weight: .semibold))
                     .foregroundColor(accentColorForNodeType(context.attributes.nodeType))
+                    .padding(.leading, 4)
             } compactTrailing: {
                 if context.state.isFinished {
                     Image(systemName: context.state.isSuccess ? "checkmark.circle.fill" : "xmark.circle.fill")
-                        .font(.system(size: 12, weight: .bold))
+                        .font(.system(size: 13, weight: .bold))
                         .foregroundColor(context.state.isSuccess ? .green : .red)
+                        .padding(.trailing, 4)
                 } else {
                     ProgressView()
                         .progressViewStyle(CircularProgressViewStyle(tint: accentColorForNodeType(context.attributes.nodeType)))
-                        .scaleEffect(0.55)
+                        .scaleEffect(0.7)
+                        .padding(.trailing, 4)
                 }
             } minimal: {
-                Image(systemName: context.state.isFinished ? (context.state.isSuccess ? "checkmark" : "xmark") : iconForNodeType(context.attributes.nodeType))
-                    .font(.system(size: 11, weight: .bold))
+                Image(systemName: context.state.isFinished ? (context.state.isSuccess ? "checkmark.circle.fill" : "xmark.circle.fill") : iconForNodeType(context.attributes.nodeType))
+                    .font(.system(size: 12, weight: .semibold))
                     .foregroundColor(context.state.isFinished ? (context.state.isSuccess ? .green : .red) : accentColorForNodeType(context.attributes.nodeType))
             }
         }
@@ -176,5 +179,13 @@ struct LockScreenLiveActivityView: View {
         default:
             return Color(red: 0.05, green: 0.65, blue: 0.98)
         }
+    }
+}
+
+@available(iOS 16.2, *)
+@main
+struct PocketFlowWidgetsBundle: WidgetBundle {
+    var body: some Widget {
+        PocketFlowLiveActivityWidget()
     }
 }
