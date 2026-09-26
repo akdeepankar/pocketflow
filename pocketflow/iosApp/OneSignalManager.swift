@@ -216,8 +216,8 @@ import Shared
     }
     
     // OSInAppMessageClickListener protocol method
-    func onClickInAppMessage(event: OSInAppMessageClickEvent) {
-        print("[OneSignal-IAM-iOS] 👆 In-App Message clicked: actionId=\(event.result.actionId ?? "nil"), urlTarget=\(event.result.urlTarget ?? "nil")")
+    func onClick(event: OSInAppMessageClickEvent) {
+        print("[OneSignal-IAM-iOS] 👆 In-App Message clicked: actionId=\(event.result.actionId ?? "nil"), urlTarget=\(String(describing: event.result.urlTarget))")
     }
     
     private func evaluateSubscription(_ subscriptionId: String?) {
