@@ -148,12 +148,17 @@ struct StepProgressTickView: View {
                                 .font(.system(size: compact ? 9 : 12, weight: .bold))
                                 .foregroundColor(.white)
                         } else if isCurrent {
-                            Circle()
-                                .fill(accentColorForNodeType(nodeType))
-                                .frame(width: compact ? 18 : 24, height: compact ? 18 : 24)
-                            Image(systemName: iconForNodeType(nodeType))
-                                .font(.system(size: compact ? 9 : 11, weight: .bold))
-                                .foregroundColor(.white)
+                            ZStack {
+                                Circle()
+                                    .fill(accentColorForNodeType(nodeType).opacity(0.18))
+                                    .frame(width: compact ? 18 : 24, height: compact ? 18 : 24)
+                                ProgressView()
+                                    .progressViewStyle(CircularProgressViewStyle(tint: accentColorForNodeType(nodeType)))
+                                    .scaleEffect(compact ? 0.65 : 0.85)
+                                Image(systemName: iconForNodeType(nodeType))
+                                    .font(.system(size: compact ? 7 : 9, weight: .bold))
+                                    .foregroundColor(accentColorForNodeType(nodeType))
+                            }
                         } else if isFinished && !isSuccess && index == completedSteps {
                             Circle()
                                 .fill(Color.red)
