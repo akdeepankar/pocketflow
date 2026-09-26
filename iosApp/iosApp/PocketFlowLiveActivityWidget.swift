@@ -36,19 +36,9 @@ struct PocketFlowLiveActivityWidget: Widget {
                             .foregroundColor(context.state.isSuccess ? .green : .red)
                             .padding(.trailing, 8)
                     } else if context.state.totalSteps > 1 {
-                        ZStack {
-                            ProgressView()
-                                .progressViewStyle(CircularProgressViewStyle(tint: accentColorForNodeType(context.state.currentNodeType)))
-                                .scaleEffect(0.95)
-                            Text("\(context.state.currentStep)/\(context.state.totalSteps)")
-                                .font(.system(size: 10, weight: .bold, design: .rounded))
-                                .foregroundColor(.white)
-                        }
-                        .padding(.trailing, 8)
-                    } else {
-                        ProgressView()
-                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                            .scaleEffect(0.8)
+                        Text("\(context.state.currentStep)/\(context.state.totalSteps)")
+                            .font(.system(size: 14, weight: .bold, design: .rounded))
+                            .foregroundColor(accentColorForNodeType(context.state.currentNodeType))
                             .padding(.trailing, 8)
                     }
                 }
@@ -70,9 +60,6 @@ struct PocketFlowLiveActivityWidget: Widget {
                                 isSuccess: context.state.isSuccess,
                                 compact: true
                             )
-                        } else if !context.state.isFinished {
-                            ProgressView()
-                                .progressViewStyle(LinearProgressViewStyle(tint: accentColorForNodeType(context.state.currentNodeType)))
                         }
                         Text(context.state.status)
                             .font(.system(size: 11, weight: .medium))
@@ -83,10 +70,15 @@ struct PocketFlowLiveActivityWidget: Widget {
                     .padding(.bottom, 6)
                 }
             } compactLeading: {
-                HStack(spacing: 3) {
+                HStack(spacing: 4) {
                     Image(systemName: iconForNodeType(context.state.currentNodeType))
                         .font(.system(size: 12, weight: .bold))
                         .foregroundColor(accentColorForNodeType(context.state.currentNodeType))
+                    if context.state.totalSteps > 1 && !context.state.isFinished {
+                        Text("\(context.state.currentStep)/\(context.state.totalSteps)")
+                            .font(.system(size: 11, weight: .bold, design: .rounded))
+                            .foregroundColor(.white)
+                    }
                 }
                 .padding(.leading, 4)
             } compactTrailing: {
@@ -95,21 +87,6 @@ struct PocketFlowLiveActivityWidget: Widget {
                         .font(.system(size: 13, weight: .bold))
                         .foregroundColor(context.state.isSuccess ? .green : .red)
                         .padding(.trailing, 4)
-                } else if context.state.totalSteps > 1 {
-                    ZStack {
-                        ProgressView()
-                            .progressViewStyle(CircularProgressViewStyle(tint: accentColorForNodeType(context.state.currentNodeType)))
-                            .scaleEffect(0.72)
-                        Text("\(context.state.currentStep)/\(context.state.totalSteps)")
-                            .font(.system(size: 8, weight: .bold, design: .rounded))
-                            .foregroundColor(.white)
-                    }
-                    .padding(.trailing, 4)
-                } else {
-                    ProgressView()
-                        .progressViewStyle(CircularProgressViewStyle(tint: accentColorForNodeType(context.state.currentNodeType)))
-                        .scaleEffect(0.65)
-                        .padding(.trailing, 4)
                 }
             } minimal: {
                 if context.state.isFinished {
@@ -117,12 +94,12 @@ struct PocketFlowLiveActivityWidget: Widget {
                         .font(.system(size: 12, weight: .semibold))
                         .foregroundColor(context.state.isSuccess ? .green : .red)
                 } else if context.state.totalSteps > 1 {
-                    ZStack {
-                        ProgressView()
-                            .progressViewStyle(CircularProgressViewStyle(tint: accentColorForNodeType(context.state.currentNodeType)))
-                            .scaleEffect(0.72)
+                    HStack(spacing: 2) {
+                        Image(systemName: iconForNodeType(context.state.currentNodeType))
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundColor(accentColorForNodeType(context.state.currentNodeType))
                         Text("\(context.state.currentStep)/\(context.state.totalSteps)")
-                            .font(.system(size: 8, weight: .bold, design: .rounded))
+                            .font(.system(size: 9, weight: .bold, design: .rounded))
                             .foregroundColor(.white)
                     }
                 } else {
