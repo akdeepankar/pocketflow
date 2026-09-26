@@ -11,13 +11,15 @@ const corsHeaders = {
 };
 
 Deno.serve(async (req) => {
+  console.log(`[Runway] >>> Function invoked: ${req.method} at ${new Date().toISOString()}`);
+
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
 
   const apiKey = Deno.env.get("RUNWAY_API_KEY");
   if (!apiKey) {
-    console.error("RUNWAY_API_KEY environment variable is not set");
+    console.error("[Runway] ❌ ERROR: RUNWAY_API_KEY environment variable is not set");
     return new Response(
       JSON.stringify({ success: false, error: "Server configuration error" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
