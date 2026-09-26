@@ -67,15 +67,23 @@ class ExecutionEngine(private val controller: WorkflowController) {
     ): Boolean {
         if (activeRuns.contains(nodeId)) return false
         activeRuns.add(nodeId)
-        app.ak25.pocketflow.storage.LocalStorage.beginBackgroundTask("pocketflow_node_$nodeId")
+        if (activityKey == null) {
+            app.ak25.pocketflow.storage.LocalStorage.beginBackgroundTask("pocketflow_node_$nodeId")
+        } else {
+            app.ak25.pocketflow.storage.LocalStorage.beginBackgroundTask("pocketflow_step_${currentStep}_$nodeId")
+        }
         
         val workflow = controller.workflows.value.find { wf -> wf.nodes.any { it.id == nodeId } } ?: run {
-            app.ak25.pocketflow.storage.LocalStorage.endBackgroundTask()
+            if (activityKey == null) {
+                app.ak25.pocketflow.storage.LocalStorage.endBackgroundTask()
+            }
             activeRuns.remove(nodeId)
             return false
         }
         val node = workflow.nodes.find { it.id == nodeId } ?: run {
-            app.ak25.pocketflow.storage.LocalStorage.endBackgroundTask()
+            if (activityKey == null) {
+                app.ak25.pocketflow.storage.LocalStorage.endBackgroundTask()
+            }
             activeRuns.remove(nodeId)
             return false
         }
@@ -83,7 +91,9 @@ class ExecutionEngine(private val controller: WorkflowController) {
         // Notes node is a standalone note/todo — nothing to execute.
         if (node.type == NodeType.NOTE) {
             controller.updateNodeStatus(nodeId, NodeStatus.COMPLETED)
-            app.ak25.pocketflow.storage.LocalStorage.endBackgroundTask()
+            if (activityKey == null) {
+                app.ak25.pocketflow.storage.LocalStorage.endBackgroundTask()
+            }
             activeRuns.remove(nodeId)
             return true
         }
@@ -309,7 +319,9 @@ class ExecutionEngine(private val controller: WorkflowController) {
             } catch (ex: Exception) {}
             false
         } finally {
-            app.ak25.pocketflow.storage.LocalStorage.endBackgroundTask()
+            if (activityKey == null) {
+                app.ak25.pocketflow.storage.LocalStorage.endBackgroundTask()
+            }
             runwayService.onTaskIdGenerated = null
             runwayService.onRemoteUrlGenerated = null
             tripoService.onTaskIdGenerated = null
