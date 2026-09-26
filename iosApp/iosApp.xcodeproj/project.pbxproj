@@ -13,7 +13,6 @@
 		37BF2E343068001B0010B71E /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 37BF2E333068001B0010B71E /* SwiftUI.framework */; };
 		37BF2E453068001C0010B71E /* OneSignalWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 37BF2E2F3068001B0010B71E /* OneSignalWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		37BF2E4C3068009A0010B71E /* OneSignalFramework in Frameworks */ = {isa = PBXBuildFile; productRef = 37BF2E4B3068009A0010B71E /* OneSignalFramework */; };
-		AW1234AB2FFE551700C0AAAA /* Appwrite in Frameworks */ = {isa = PBXBuildFile; productRef = AW1234AB2FFE551700C0AAAB /* Appwrite */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -105,7 +104,6 @@
 			files = (
 				37A0748B2FFE551700C08AD7 /* OneSignalFramework in Frameworks */,
 				37A0748B2FFE551700C08AE1 /* OneSignalInAppMessages in Frameworks */,
-				AW1234AB2FFE551700C0AAAA /* Appwrite in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -189,7 +187,6 @@
 			packageProductDependencies = (
 				F5E929AC4DF2B799E798492B /* OneSignalFramework */,
 				37A0748B2FFE551700C08AE0 /* OneSignalInAppMessages */,
-				AW1234AB2FFE551700C0AAAB /* Appwrite */,
 			);
 			productName = iosApp;
 			productReference = 53508FC76E17421CA31DC4D0 /* PocketFlow.app */;
@@ -229,7 +226,6 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				F5E929AC4DF2B799E798492A /* XCRemoteSwiftPackageReference "OneSignal-XCFramework" */,
-				AW1234AB2FFE551700C0AAA0 /* XCRemoteSwiftPackageReference "sdk-for-apple" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 758BA4CB2C4DF7443352F8B2 /* Products */;
@@ -589,20 +585,12 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
-		AW1234AB2FFE551700C0AAA0 /* XCRemoteSwiftPackageReference "sdk-for-apple" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/appwrite/sdk-for-apple";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 9.0.0;
-			};
-		};
 		F5E929AC4DF2B799E798492A /* XCRemoteSwiftPackageReference "OneSignal-XCFramework" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/OneSignal/OneSignal-XCFramework";
 			requirement = {
-				kind = exactVersion;
-				version = 5.5.4;
+				kind = upToNextMajorVersion;
+				minimumVersion = 5.0.0;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */
@@ -617,11 +605,6 @@
 			isa = XCSwiftPackageProductDependency;
 			package = F5E929AC4DF2B799E798492A /* XCRemoteSwiftPackageReference "OneSignal-XCFramework" */;
 			productName = OneSignalFramework;
-		};
-		AW1234AB2FFE551700C0AAAB /* Appwrite */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = AW1234AB2FFE551700C0AAA0 /* XCRemoteSwiftPackageReference "sdk-for-apple" */;
-			productName = Appwrite;
 		};
 		F5E929AC4DF2B799E798492B /* OneSignalFramework */ = {
 			isa = XCSwiftPackageProductDependency;
