@@ -199,9 +199,38 @@ actual object LocalStorage {
         }
     }
 
-    actual fun startLiveActivity(workflowId: String, workflowName: String, nodeId: String, nodeTitle: String, nodeType: String) {}
-    actual fun updateLiveActivity(nodeId: String, status: String, progress: Double, message: String, isFinished: Boolean, isSuccess: Boolean) {}
-    actual fun endLiveActivity(nodeId: String, isSuccess: Boolean, message: String) {}
+    actual fun startLiveActivity(
+        workflowId: String,
+        workflowName: String,
+        nodeId: String,
+        nodeTitle: String,
+        nodeType: String,
+        currentStep: Int,
+        totalSteps: Int,
+        stepNodeTypesJson: String
+    ) {}
+
+    actual fun updateLiveActivity(
+        nodeId: String,
+        status: String,
+        progress: Double,
+        message: String,
+        isFinished: Boolean,
+        isSuccess: Boolean,
+        currentStep: Int,
+        totalSteps: Int,
+        completedSteps: Int,
+        nodeTitle: String,
+        nodeType: String
+    ) {}
+
+    actual fun endLiveActivity(
+        nodeId: String,
+        isSuccess: Boolean,
+        message: String,
+        completedSteps: Int,
+        totalSteps: Int
+    ) {}
 
     actual fun beginBackgroundTask(name: String) {
         // Android background execution is managed by ExecutionEngine.engineScope

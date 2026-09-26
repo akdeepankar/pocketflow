@@ -147,21 +147,48 @@ actual object LocalStorage {
         platform.UserNotifications.UNUserNotificationCenter.currentNotificationCenter().addNotificationRequest(request) { _ -> }
     }
 
-    actual fun startLiveActivity(workflowId: String, workflowName: String, nodeId: String, nodeTitle: String, nodeType: String) {
+    actual fun startLiveActivity(
+        workflowId: String,
+        workflowName: String,
+        nodeId: String,
+        nodeTitle: String,
+        nodeType: String,
+        currentStep: Int,
+        totalSteps: Int,
+        stepNodeTypesJson: String
+    ) {
         app.ak25.pocketflow.platform.LiveActivityBridgeHolder.current?.startLiveActivity(
-            workflowId, workflowName, nodeId, nodeTitle, nodeType
+            workflowId, workflowName, nodeId, nodeTitle, nodeType, currentStep, totalSteps, stepNodeTypesJson
         )
     }
 
-    actual fun updateLiveActivity(nodeId: String, status: String, progress: Double, message: String, isFinished: Boolean, isSuccess: Boolean) {
+    actual fun updateLiveActivity(
+        nodeId: String,
+        status: String,
+        progress: Double,
+        message: String,
+        isFinished: Boolean,
+        isSuccess: Boolean,
+        currentStep: Int,
+        totalSteps: Int,
+        completedSteps: Int,
+        nodeTitle: String,
+        nodeType: String
+    ) {
         app.ak25.pocketflow.platform.LiveActivityBridgeHolder.current?.updateLiveActivity(
-            nodeId, status, progress, message, isFinished, isSuccess
+            nodeId, status, progress, message, isFinished, isSuccess, currentStep, totalSteps, completedSteps, nodeTitle, nodeType
         )
     }
 
-    actual fun endLiveActivity(nodeId: String, isSuccess: Boolean, message: String) {
+    actual fun endLiveActivity(
+        nodeId: String,
+        isSuccess: Boolean,
+        message: String,
+        completedSteps: Int,
+        totalSteps: Int
+    ) {
         app.ak25.pocketflow.platform.LiveActivityBridgeHolder.current?.endLiveActivity(
-            nodeId, isSuccess, message
+            nodeId, isSuccess, message, completedSteps, totalSteps
         )
     }
 

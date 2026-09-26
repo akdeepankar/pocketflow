@@ -17,7 +17,10 @@ final class LiveActivityManager: NSObject, LiveActivityBridge {
         workflowName: String,
         nodeId: String,
         nodeTitle: String,
-        nodeType: String
+        nodeType: String,
+        currentStep: Int32,
+        totalSteps: Int32,
+        stepNodeTypesJson: String
     ) {
         guard #available(iOS 16.2, *) else {
             print("[LiveActivity] ActivityKit is only available on iOS 16.2+")
@@ -29,19 +32,36 @@ final class LiveActivityManager: NSObject, LiveActivityBridge {
             return
         }
 
-        // End any existing activity for this node
-        endLiveActivity(nodeId: nodeId, isSuccess: false, message: "")
+        // End any existing activity for this activityId / nodeId
+        endLiveActivity(nodeId: nodeId, isSuccess: false, message: "", completedSteps: 0, totalSteps: totalSteps)
+
+        var stepTypes: [String] = []
+        if let data = stepNodeTypesJson.data(using: .utf8),
+           let list = try? JSONDecoder().decode([String].self, from: data), !list.isEmpty {
+            stepTypes = list
+        } else {
+            stepTypes = [nodeType]
+        }
 
         let attributes = PocketFlowActivityAttributes(
             workflowId: workflowId,
-            nodeId: nodeId,
+            activityId: nodeId,
             nodeType: nodeType
         )
 
+        let initialStatus = totalSteps > 1
+            ? "Step \(currentStep)/\(totalSteps): Generating \(nodeTitle)..."
+            : "Generating \(nodeTitle)..."
+
         let initialContentState = PocketFlowActivityAttributes.ContentState(
-            status: "Generating \(nodeTitle)...",
+            status: initialStatus,
             nodeTitle: nodeTitle,
             workflowName: workflowName,
+            currentStep: Int(currentStep),
+            totalSteps: Int(totalSteps),
+            completedSteps: 0,
+            stepNodeTypes: stepTypes,
+            currentNodeType: nodeType,
             progress: -1.0,
             isFinished: false,
             isSuccess: false,
@@ -55,7 +75,7 @@ final class LiveActivityManager: NSObject, LiveActivityBridge {
                 pushType: nil
             )
             activeActivities[nodeId] = activity
-            print("[LiveActivity] 🚀 Started Live Activity for node \(nodeId) (id: \(activity.id))")
+            print("[LiveActivity] 🚀 Started Live Activity for \(nodeId) (id: \(activity.id), steps: \(currentStep)/\(totalSteps))")
 
             Task {
                 for await pushToken in activity.pushTokenUpdates {
@@ -74,17 +94,41 @@ final class LiveActivityManager: NSObject, LiveActivityBridge {
         progress: Double,
         message: String,
         isFinished: Bool,
-        isSuccess: Bool
+        isSuccess: Bool,
+        currentStep: Int32,
+        totalSteps: Int32,
+        completedSteps: Int32,
+        nodeTitle: String,
+        nodeType: String
     ) {
         guard #available(iOS 16.2, *) else { return }
         guard let activity = activeActivities[nodeId] as? Activity<PocketFlowActivityAttributes> else {
             return
         }
 
+        let title = nodeTitle.isEmpty ? activity.content.state.nodeTitle : nodeTitle
+        let type = nodeType.isEmpty ? activity.content.state.currentNodeType : nodeType
+
+        let updatedStatus: String
+        if !status.isEmpty {
+            updatedStatus = status
+        } else if !message.isEmpty {
+            updatedStatus = message
+        } else if isFinished {
+            updatedStatus = isSuccess ? "\(title) Completed! ✓" : "Generation Failed"
+        } else {
+            updatedStatus = activity.content.state.status
+        }
+
         let updatedState = PocketFlowActivityAttributes.ContentState(
-            status: status,
-            nodeTitle: activity.content.state.nodeTitle,
+            status: updatedStatus,
+            nodeTitle: title,
             workflowName: activity.content.state.workflowName,
+            currentStep: Int(currentStep),
+            totalSteps: Int(totalSteps),
+            completedSteps: Int(completedSteps),
+            stepNodeTypes: activity.content.state.stepNodeTypes,
+            currentNodeType: type,
             progress: progress,
             isFinished: isFinished,
             isSuccess: isSuccess,
@@ -95,20 +139,38 @@ final class LiveActivityManager: NSObject, LiveActivityBridge {
             await activity.update(
                 .init(state: updatedState, staleDate: Date().addingTimeInterval(300))
             )
-            print("[LiveActivity] 🔄 Updated Live Activity for node \(nodeId): \(status)")
+            print("[LiveActivity] 🔄 Updated Live Activity for \(nodeId): \(updatedStatus) (step: \(currentStep)/\(totalSteps), completed: \(completedSteps))")
         }
     }
 
-    func endLiveActivity(nodeId: String, isSuccess: Bool, message: String) {
+    func endLiveActivity(
+        nodeId: String,
+        isSuccess: Bool,
+        message: String,
+        completedSteps: Int32,
+        totalSteps: Int32
+    ) {
         guard #available(iOS 16.2, *) else { return }
         guard let activity = activeActivities.removeValue(forKey: nodeId) as? Activity<PocketFlowActivityAttributes> else {
             return
         }
 
+        let finalStatus: String
+        if isSuccess {
+            finalStatus = totalSteps > 1 ? "All \(totalSteps) nodes completed! ✓" : "\(activity.content.state.nodeTitle) Completed! ✓"
+        } else {
+            finalStatus = message.isEmpty ? "Generation Failed" : message
+        }
+
         let finalState = PocketFlowActivityAttributes.ContentState(
-            status: isSuccess ? "\(activity.content.state.nodeTitle) Completed!" : (message.isEmpty ? "Generation Failed" : message),
+            status: finalStatus,
             nodeTitle: activity.content.state.nodeTitle,
             workflowName: activity.content.state.workflowName,
+            currentStep: Int(totalSteps),
+            totalSteps: Int(totalSteps),
+            completedSteps: Int(completedSteps),
+            stepNodeTypes: activity.content.state.stepNodeTypes,
+            currentNodeType: activity.content.state.currentNodeType,
             progress: 1.0,
             isFinished: true,
             isSuccess: isSuccess,
@@ -120,7 +182,7 @@ final class LiveActivityManager: NSObject, LiveActivityBridge {
                 .init(state: finalState, staleDate: nil),
                 dismissalPolicy: .after(Date().addingTimeInterval(4.0))
             )
-            print("[LiveActivity] 🏁 Ended Live Activity for node \(nodeId) (isSuccess: \(isSuccess))")
+            print("[LiveActivity] 🏁 Ended Live Activity for \(nodeId) (isSuccess: \(isSuccess), completed: \(completedSteps)/\(totalSteps))")
         }
     }
 }

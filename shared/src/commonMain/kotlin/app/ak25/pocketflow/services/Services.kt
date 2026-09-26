@@ -12,6 +12,8 @@ import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
 import io.ktor.serialization.kotlinx.json.json
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonPrimitive
 
@@ -55,7 +57,14 @@ class ExecutionEngine(private val controller: WorkflowController) {
         cancelled = true
     }
 
-    suspend fun runNode(nodeId: String): Boolean {
+    suspend fun runNode(
+        nodeId: String,
+        currentStep: Int = 1,
+        totalSteps: Int = 1,
+        completedSteps: Int = 0,
+        activityKey: String? = null,
+        stepNodeTypes: List<String> = emptyList()
+    ): Boolean {
         if (activeRuns.contains(nodeId)) return false
         activeRuns.add(nodeId)
         app.ak25.pocketflow.storage.LocalStorage.beginBackgroundTask("pocketflow_node_$nodeId")
@@ -91,16 +100,36 @@ class ExecutionEngine(private val controller: WorkflowController) {
             "MODEL3D_GENERATION" -> "3D Model"
             else -> nodeTypeName.lowercase().replace("_", " ").replaceFirstChar { it.uppercase() }
         }
+        val displayTitle = node.params["title"] ?: friendlyName
+        val effectiveActivityKey = activityKey ?: nodeId
+        val stepTypesList = if (stepNodeTypes.isNotEmpty()) stepNodeTypes else listOf(nodeTypeName)
+        val stepTypesJson = Json.encodeToString<List<String>>(stepTypesList)
 
-        // Start iOS Live Activity on Lock Screen & Dynamic Island
+        // Start or update iOS Live Activity on Lock Screen & Dynamic Island
         try {
-            app.ak25.pocketflow.storage.LocalStorage.startLiveActivity(
-                workflowId = workflow.id,
-                workflowName = workflow.name,
-                nodeId = nodeId,
-                nodeTitle = friendlyName,
-                nodeType = nodeTypeName
-            )
+            if (activityKey == null) {
+                app.ak25.pocketflow.storage.LocalStorage.startLiveActivity(
+                    workflowId = workflow.id,
+                    workflowName = workflow.name,
+                    nodeId = nodeId,
+                    nodeTitle = displayTitle,
+                    nodeType = nodeTypeName,
+                    currentStep = currentStep,
+                    totalSteps = totalSteps,
+                    stepNodeTypesJson = stepTypesJson
+                )
+            } else {
+                app.ak25.pocketflow.storage.LocalStorage.updateLiveActivity(
+                    nodeId = effectiveActivityKey,
+                    status = if (totalSteps > 1) "Step $currentStep/$totalSteps: Generating $displayTitle..." else "Generating $displayTitle...",
+                    progress = -1.0,
+                    currentStep = currentStep,
+                    totalSteps = totalSteps,
+                    completedSteps = completedSteps,
+                    nodeTitle = displayTitle,
+                    nodeType = nodeTypeName
+                )
+            }
         } catch (e: Exception) {
             // ignore
         }
@@ -168,27 +197,19 @@ class ExecutionEngine(private val controller: WorkflowController) {
                         // End Live Activity on failure
                         try {
                             app.ak25.pocketflow.storage.LocalStorage.endLiveActivity(
-                                nodeId = nodeId,
+                                nodeId = effectiveActivityKey,
                                 isSuccess = false,
-                                message = "Generation failed"
+                                message = if (totalSteps > 1) "Step $currentStep ($displayTitle) failed" else "Generation failed",
+                                completedSteps = completedSteps,
+                                totalSteps = totalSteps
                             )
                         } catch (ex: Exception) {}
 
                         // Show Local Notification on failure
                         try {
-                            val nodeTypeName = node.type.name
-                            val friendlyName = when (nodeTypeName) {
-                                "IMAGE_GENERATION" -> "Image"
-                                "VIDEO_GENERATION" -> "Video"
-                                "TEXT_TO_SPEECH" -> "Audio"
-                                "AUDIO_GENERATION" -> "Audio"
-                                "TEXT_GENERATION" -> "Text"
-                                "MODEL3D_GENERATION" -> "3D Model"
-                                else -> nodeTypeName.lowercase().replace("_", " ").replaceFirstChar { it.uppercase() }
-                            }
                             app.ak25.pocketflow.storage.LocalStorage.showLocalNotification(
                                 title = "Generation Failed (${workflow.name})",
-                                body = "$friendlyName generation failed!",
+                                body = "$displayTitle generation failed!",
                                 workflowId = workflow.id,
                                 nodeId = nodeId
                             )
@@ -223,32 +244,35 @@ class ExecutionEngine(private val controller: WorkflowController) {
                 jobId = latestJobId
             )
 
-            // End Live Activity on success
+            // Update / End Live Activity on success
             try {
-                app.ak25.pocketflow.storage.LocalStorage.endLiveActivity(
-                    nodeId = nodeId,
-                    isSuccess = true,
-                    message = "Completed"
-                )
+                if (activityKey == null) {
+                    app.ak25.pocketflow.storage.LocalStorage.endLiveActivity(
+                        nodeId = nodeId,
+                        isSuccess = true,
+                        message = "$displayTitle Completed! ✓",
+                        completedSteps = 1,
+                        totalSteps = 1
+                    )
+                } else {
+                    app.ak25.pocketflow.storage.LocalStorage.updateLiveActivity(
+                        nodeId = effectiveActivityKey,
+                        status = "Step $currentStep of $totalSteps completed ✓",
+                        progress = (completedSteps + 1).toDouble() / totalSteps,
+                        isFinished = false,
+                        isSuccess = true,
+                        currentStep = currentStep,
+                        totalSteps = totalSteps,
+                        completedSteps = completedSteps + 1,
+                        nodeTitle = displayTitle,
+                        nodeType = nodeTypeName
+                    )
+                }
             } catch (e: Exception) {}
             
             // Show Local Notification instantly while in background or foreground
             try {
-                val nodeTypeName = node.type.name
-                val friendlyName = when (nodeTypeName) {
-                    "IMAGE_GENERATION" -> "Image"
-                    "VIDEO_GENERATION" -> "Video"
-                    "TEXT_TO_SPEECH" -> "Audio"
-                    "AUDIO_GENERATION" -> "Audio"
-                    "TEXT_GENERATION" -> "Text"
-                    "MODEL3D_GENERATION" -> "3D Model"
-                    else -> nodeTypeName.lowercase().replace("_", " ").replaceFirstChar { it.uppercase() }
-                }
-                val notificationText = if (nodeTypeName == "IMAGE_GENERATION" || nodeTypeName == "VIDEO_GENERATION" || nodeTypeName == "TEXT_TO_SPEECH" || nodeTypeName == "AUDIO_GENERATION" || nodeTypeName == "TEXT_GENERATION" || nodeTypeName == "MODEL3D_GENERATION") {
-                    "$friendlyName has been completed"
-                } else {
-                    "Node '$friendlyName' has finished generation successfully!"
-                }
+                val notificationText = "$displayTitle has been completed"
                 app.ak25.pocketflow.storage.LocalStorage.showLocalNotification(
                     title = "Generation Completed (${workflow.name})",
                     body = notificationText,
@@ -264,9 +288,11 @@ class ExecutionEngine(private val controller: WorkflowController) {
             println("[ExecutionEngine] Node $nodeId execution cancelled.")
             try {
                 app.ak25.pocketflow.storage.LocalStorage.endLiveActivity(
-                    nodeId = nodeId,
+                    nodeId = effectiveActivityKey,
                     isSuccess = false,
-                    message = "Cancelled"
+                    message = "Cancelled",
+                    completedSteps = completedSteps,
+                    totalSteps = totalSteps
                 )
             } catch (ex: Exception) {}
             throw e
@@ -274,9 +300,11 @@ class ExecutionEngine(private val controller: WorkflowController) {
             println("[ExecutionEngine] Node $nodeId unexpected error: ${e.message}")
             try {
                 app.ak25.pocketflow.storage.LocalStorage.endLiveActivity(
-                    nodeId = nodeId,
+                    nodeId = effectiveActivityKey,
                     isSuccess = false,
-                    message = "Failed"
+                    message = "Failed",
+                    completedSteps = completedSteps,
+                    totalSteps = totalSteps
                 )
             } catch (ex: Exception) {}
             false
@@ -629,20 +657,96 @@ class ExecutionEngine(private val controller: WorkflowController) {
             return true
         }
 
-        for (nodeId in nodesToRun) {
-            if (cancelled) return false
-            val node = nodesMap[nodeId]
-            if (node?.type != NodeType.TEXT_PROMPT) {
-                controller.updateNodeStatus(nodeId, NodeStatus.PENDING)
+        val genNodes = nodesToRun.mapNotNull { nodesMap[it] }.filter { it.type != NodeType.TEXT_PROMPT && it.type != NodeType.NOTE }
+        val totalSteps = genNodes.size
+        val stepTypes = genNodes.map { it.type.name }
+        val stepTypesJson = Json.encodeToString<List<String>>(stepTypes)
+
+        // Start workflow-wide Live Activity
+        if (totalSteps > 0) {
+            val firstNode = genNodes.first()
+            val firstFriendly = firstNode.params["title"] ?: when (firstNode.type.name) {
+                "IMAGE_GENERATION" -> "Image"
+                "VIDEO_GENERATION" -> "Video"
+                "TEXT_TO_SPEECH" -> "Audio"
+                "AUDIO_GENERATION" -> "Audio"
+                "TEXT_GENERATION" -> "Text"
+                "MODEL3D_GENERATION" -> "3D Model"
+                else -> firstNode.type.name.lowercase().replace("_", " ").replaceFirstChar { it.uppercase() }
             }
+            try {
+                app.ak25.pocketflow.storage.LocalStorage.startLiveActivity(
+                    workflowId = workflow.id,
+                    workflowName = workflow.name,
+                    nodeId = workflow.id,
+                    nodeTitle = firstFriendly,
+                    nodeType = firstNode.type.name,
+                    currentStep = 1,
+                    totalSteps = totalSteps,
+                    stepNodeTypesJson = stepTypesJson
+                )
+            } catch (e: Exception) {}
         }
 
+        var completedCount = 0
         for (nodeId in nodesToRun) {
-            if (cancelled) return false
-            val success = runNode(nodeId)
-            if (!success) return false
+            if (cancelled) {
+                if (totalSteps > 0) {
+                    try {
+                        app.ak25.pocketflow.storage.LocalStorage.endLiveActivity(
+                            nodeId = workflow.id,
+                            isSuccess = false,
+                            message = "Cancelled",
+                            completedSteps = completedCount,
+                            totalSteps = totalSteps
+                        )
+                    } catch (e: Exception) {}
+                }
+                return false
+            }
+            val node = nodesMap[nodeId]
+            if (node?.type == NodeType.TEXT_PROMPT || node?.type == NodeType.NOTE) {
+                continue
+            }
+            val stepIndex = genNodes.indexOfFirst { it.id == nodeId } + 1
+            val success = runNode(
+                nodeId = nodeId,
+                currentStep = if (stepIndex > 0) stepIndex else (completedCount + 1),
+                totalSteps = totalSteps,
+                completedSteps = completedCount,
+                activityKey = workflow.id,
+                stepNodeTypes = stepTypes
+            )
+            if (!success) {
+                if (totalSteps > 0) {
+                    try {
+                        app.ak25.pocketflow.storage.LocalStorage.endLiveActivity(
+                            nodeId = workflow.id,
+                            isSuccess = false,
+                            message = "Generation failed",
+                            completedSteps = completedCount,
+                            totalSteps = totalSteps
+                        )
+                    } catch (e: Exception) {}
+                }
+                return false
+            }
+            completedCount++
         }
         
+        // Finalize Live Activity for the overall workflow
+        if (totalSteps > 0) {
+            try {
+                app.ak25.pocketflow.storage.LocalStorage.endLiveActivity(
+                    nodeId = workflow.id,
+                    isSuccess = true,
+                    message = "All $totalSteps nodes completed! ✓",
+                    completedSteps = totalSteps,
+                    totalSteps = totalSteps
+                )
+            } catch (e: Exception) {}
+        }
+
         // Show Local Notification instantly
         try {
             app.ak25.pocketflow.storage.LocalStorage.showLocalNotification(
