@@ -2090,8 +2090,17 @@ fun EditorScreen(
                         Spacer(modifier = Modifier.height(24.dp))
                         OutlinedTextField(
                             value = newWorkflowName,
-                            onValueChange = { newWorkflowName = it },
+                            onValueChange = { if (it.length <= 20) newWorkflowName = it },
                             placeholder = { Text("Rename your workflow...", color = Color.Gray) },
+                            supportingText = {
+                                Text(
+                                    "${newWorkflowName.length}/20",
+                                    modifier = Modifier.fillMaxWidth(),
+                                    textAlign = androidx.compose.ui.text.style.TextAlign.End,
+                                    fontSize = 11.sp,
+                                    color = if (newWorkflowName.length >= 20) Color(0xFFFF3B30) else Color.Gray
+                                )
+                            },
                             modifier = Modifier.fillMaxWidth(),
                             singleLine = true,
                             shape = RoundedCornerShape(16.dp),
@@ -2103,11 +2112,11 @@ fun EditorScreen(
                                 cursorColor = Color(0xFF1A1A1A)
                             )
                         )
-                        Spacer(modifier = Modifier.height(32.dp))
+                        Spacer(modifier = Modifier.height(24.dp))
                         Button(
                             onClick = {
                                 if (newWorkflowName.isNotBlank() && workflow != null) {
-                                    controller.renameWorkflow(workflow!!.id, newWorkflowName)
+                                    controller.renameWorkflow(workflow!!.id, newWorkflowName.trim().take(20))
                                 }
                                 showRenameDialog = false
                             },

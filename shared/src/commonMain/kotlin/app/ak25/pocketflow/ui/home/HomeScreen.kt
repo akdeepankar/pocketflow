@@ -908,8 +908,17 @@ fun HomeScreen(
                         Spacer(modifier = Modifier.height(24.dp))
                         OutlinedTextField(
                             value = newWorkflowName,
-                            onValueChange = { newWorkflowName = it },
+                            onValueChange = { if (it.length <= 20) newWorkflowName = it },
                             placeholder = { Text("Name your workflow...", color = Color.Gray) },
+                            supportingText = {
+                                Text(
+                                    "${newWorkflowName.length}/20",
+                                    modifier = Modifier.fillMaxWidth(),
+                                    textAlign = androidx.compose.ui.text.style.TextAlign.End,
+                                    fontSize = 11.sp,
+                                    color = if (newWorkflowName.length >= 20) Color(0xFFFF3B30) else Color.Gray
+                                )
+                            },
                             modifier = Modifier.fillMaxWidth(),
                             singleLine = true,
                             shape = RoundedCornerShape(16.dp),
@@ -921,10 +930,10 @@ fun HomeScreen(
                                 cursorColor = Color(0xFF1A1A1A)
                             )
                         )
-                        Spacer(modifier = Modifier.height(32.dp))
+                        Spacer(modifier = Modifier.height(24.dp))
                         Button(
                             onClick = {
-                                val name = if (newWorkflowName.isNotBlank()) newWorkflowName else "Untitled Workflow"
+                                val name = if (newWorkflowName.isNotBlank()) newWorkflowName.trim().take(20) else "Untitled Workflow"
                                 controller.createWorkflow(name)
                                 showCreateSheet = false
                                 onNavigateToEditor()

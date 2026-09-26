@@ -353,6 +353,7 @@ class WorkflowController {
     // ─── Public API (unchanged surface, now also syncs to Appwrite) ───────────
 
     fun createWorkflow(name: String) {
+        val cleanName = name.trim().take(20).ifEmpty { "Untitled Workflow" }
         val uid = store.loadString("appwrite_user_id").orEmpty()
         val userName = store.loadString("user_name").orEmpty()
         val email = store.loadString("user_email").orEmpty()
@@ -368,7 +369,7 @@ class WorkflowController {
 
         val newWorkflow = Workflow(
             id = IdGenerator.generate(),
-            name = name,
+            name = cleanName,
             lastEdited = getCurrentTimeMillis(),
             createdAtDate = app.ak25.pocketflow.utils.getCurrentDate(),
             joinCode = code,
@@ -794,13 +795,14 @@ class WorkflowController {
     }
 
     fun renameWorkflow(workflowId: String, newName: String) {
+        val cleanName = newName.trim().take(20).ifEmpty { "Untitled Workflow" }
         val oldName = _workflows.value.find { it.id == workflowId }?.name ?: "Unknown"
         val list = _workflows.value.map {
-            if (it.id == workflowId) it.copy(name = newName) else it
+            if (it.id == workflowId) it.copy(name = cleanName) else it
         }
         _workflows.value = list
         val current = _currentWorkflow.value
-        if (current?.id == workflowId) _currentWorkflow.value = current.copy(name = newName)
+        if (current?.id == workflowId) _currentWorkflow.value = current.copy(name = cleanName)
         saveToLocal(list)
         val target = list.find { it.id == workflowId } ?: return
         if (!isGuest) {
@@ -809,8 +811,8 @@ class WorkflowController {
         app.ak25.pocketflow.storage.ActivityTracker.log(
             type = ActivityType.RENAME_WORKFLOW,
             title = "Workflow Renamed",
-            details = "Renamed workflow '$oldName' to '$newName'",
-            workflowName = newName
+            details = "Renamed workflow '$oldName' to '$cleanName'",
+            workflowName = cleanName
         )
     }
 
