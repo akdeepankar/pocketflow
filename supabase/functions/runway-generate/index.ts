@@ -63,8 +63,17 @@ export default {
           let outputUrl = null;
           let errorMessage = null;
 
+          const nodeTitle = liveActivity?.nodeTitle || "Generation";
+          const workflowName = liveActivity?.workflowName || "Workflow";
+          const totalSteps = liveActivity?.totalSteps || 1;
+          const currentStep = liveActivity?.currentStep || 1;
+          const stepNodeTypes = liveActivity?.stepNodeTypes || [];
+          const nodeType = liveActivity?.nodeType || "IMAGE_GENERATION";
+
           for (let attempt = 0; attempt < maxAttempts; attempt++) {
             await new Promise((resolve) => setTimeout(resolve, 5000));
+            const elapsedSeconds = (attempt + 1) * 5;
+
             try {
               const pollRes = await fetch(`${RUNWAY_BASE}/tasks/${taskId}`, {
                 headers: {
@@ -84,6 +93,43 @@ export default {
                 errorMessage = pollData.failure || pollData.failureCode || "Task failed";
                 console.error(`[Background Poller] Task ${taskId} FAILED: ${errorMessage}`);
                 break;
+              } else if (liveActivity?.activityId && oneSignalRestKey && attempt > 0 && attempt % 2 === 0) {
+                // Send periodic progress update every 10 seconds while app is in background/killed
+                const estimatedProgress = Math.min(0.15 + (attempt * 0.05), 0.90);
+                const progressText = totalSteps > 1
+                  ? `Step ${currentStep}/${totalSteps}: Generating ${nodeTitle} (${elapsedSeconds}s)...`
+                  : `Generating ${nodeTitle} (${elapsedSeconds}s)...`;
+
+                fetch(
+                  `https://api.onesignal.com/apps/${ONESIGNAL_APP_ID}/live_activities/${liveActivity.activityId}/notifications`,
+                  {
+                    method: "POST",
+                    headers: {
+                      "Authorization": `Key ${oneSignalRestKey}`,
+                      "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                      name: "PocketFlow Progress Update",
+                      event: "update",
+                      priority: 10,
+                      contents: { en: progressText },
+                      event_updates: {
+                        status: progressText,
+                        nodeTitle: nodeTitle,
+                        workflowName: workflowName,
+                        currentStep: currentStep,
+                        totalSteps: totalSteps,
+                        completedSteps: currentStep - 1,
+                        stepNodeTypes: stepNodeTypes,
+                        currentNodeType: nodeType,
+                        progress: estimatedProgress,
+                        isFinished: false,
+                        isSuccess: false,
+                        timestamp: Math.floor(Date.now() / 1000),
+                      },
+                    }),
+                  }
+                ).catch((e) => console.error("[OneSignal Progress] Push error:", e));
               }
             } catch (err) {
               console.error(`[Background Poller] Network error polling task ${taskId}:`, err);
@@ -91,12 +137,6 @@ export default {
           }
 
           const isSuccess = status === "SUCCEEDED";
-          const nodeTitle = liveActivity?.nodeTitle || "Generation";
-          const workflowName = liveActivity?.workflowName || "Workflow";
-          const totalSteps = liveActivity?.totalSteps || 1;
-          const currentStep = liveActivity?.currentStep || 1;
-          const stepNodeTypes = liveActivity?.stepNodeTypes || [];
-          const nodeType = liveActivity?.nodeType || "IMAGE_GENERATION";
 
           // 1. Send OneSignal Live Activity Remote Update/End
           if (liveActivity?.activityId) {
