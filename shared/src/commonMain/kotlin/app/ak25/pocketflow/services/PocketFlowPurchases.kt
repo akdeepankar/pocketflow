@@ -1,5 +1,9 @@
 package app.ak25.pocketflow.services
 
+import app.ak25.pocketflow.models.NodeStatus
+import app.ak25.pocketflow.models.NodeType
+import app.ak25.pocketflow.models.Workflow
+import app.ak25.pocketflow.models.WorkflowNode
 import com.revenuecat.purchases.kmp.Purchases
 import com.revenuecat.purchases.kmp.PurchasesConfiguration
 import com.revenuecat.purchases.kmp.models.CustomerInfo
@@ -28,9 +32,6 @@ import kotlinx.serialization.json.put
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 import kotlin.random.Random
-import app.ak25.pocketflow.models.NodeType
-import app.ak25.pocketflow.models.Workflow
-import app.ak25.pocketflow.models.WorkflowNode
 
 const val REVENUECAT_API_KEY_ANDROID = "goog_lpdDQaEQrgKUJLUypodeKYagukU"
 const val REVENUECAT_API_KEY_IOS = "appl_LWSKjWzQSPESgyrFUjfAPhzWeEQ"
@@ -515,8 +516,49 @@ object PocketFlowPurchases {
     /**
      * Estimate the credit cost for a workflow run.
      */
-    fun estimateWorkflowCredits(workflow: Workflow?): Int {
-        return workflow?.nodes?.sumOf { estimateNodeCredits(it) } ?: 0
+    fun estimateWorkflowCredits(workflow: Workflow?, onlyEmpty: Boolean = false): Int {
+        if (workflow == null) return 0
+        if (!onlyEmpty) {
+            return workflow.nodes.sumOf { estimateNodeCredits(it) }
+        }
+        return getNodesNeedingRun(workflow).sumOf { estimateNodeCredits(it) }
+    }
+
+    /**
+     * Determine which generative nodes need to be run in a branch-wise empty run.
+     */
+    fun getNodesNeedingRun(workflow: Workflow?): List<WorkflowNode> {
+        if (workflow == null) return emptyList()
+        val inDegree = mutableMapOf<String, Int>()
+        val adjList = mutableMapOf<String, MutableList<String>>()
+        workflow.nodes.forEach { inDegree[it.id] = 0 }
+        workflow.edges.forEach {
+            inDegree[it.targetNodeId] = (inDegree[it.targetNodeId] ?: 0) + 1
+            adjList.getOrPut(it.sourceNodeId) { mutableListOf() }.add(it.targetNodeId)
+        }
+        val queue = mutableListOf<String>()
+        inDegree.forEach { (id, deg) -> if (deg == 0) queue.add(id) }
+        val sorted = mutableListOf<String>()
+        while (queue.isNotEmpty()) {
+            val current = queue.removeAt(0)
+            sorted.add(current)
+            adjList[current]?.forEach { neighbor ->
+                inDegree[neighbor] = (inDegree[neighbor] ?: 1) - 1
+                if (inDegree[neighbor] == 0) queue.add(neighbor)
+            }
+        }
+        val nodesMap = workflow.nodes.associateBy { it.id }
+        val needRunSet = mutableSetOf<String>()
+        for (nodeId in sorted) {
+            val node = nodesMap[nodeId] ?: continue
+            if (node.type == NodeType.TEXT_PROMPT) continue
+            val isEmpty = node.outputUrl.isNullOrEmpty() || node.status != NodeStatus.COMPLETED
+            val upstreamRan = workflow.edges.any { it.targetNodeId == nodeId && it.sourceNodeId in needRunSet }
+            if (isEmpty || upstreamRan) {
+                needRunSet.add(nodeId)
+            }
+        }
+        return workflow.nodes.filter { it.id in needRunSet }
     }
 
     /**

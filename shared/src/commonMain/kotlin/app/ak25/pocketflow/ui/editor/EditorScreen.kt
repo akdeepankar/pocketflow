@@ -48,16 +48,30 @@ import androidx.compose.ui.zIndex
 import app.ak25.pocketflow.services.PocketFlowPurchases
 import app.ak25.pocketflow.services.UserPresenceState
 import app.ak25.pocketflow.utils.getCurrentTimeMillis
-
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import com.revenuecat.purchases.kmp.ui.revenuecatui.Paywall
 import io.ktor.client.HttpClient
 import io.ktor.client.request.get
 import io.ktor.client.statement.readBytes
 import com.revenuecat.purchases.kmp.ui.revenuecatui.PaywallOptions
 
+private fun getNodeTypeIcon(type: NodeType): ImageVector {
+    return when (type) {
+        NodeType.TEXT_PROMPT -> AppIcons.Text
+        NodeType.IMAGE_GENERATION, NodeType.UPLOADED_IMAGE, NodeType.AD_LOCALIZATION, NodeType.MARKETING_STOCK_IMAGE, NodeType.PRODUCT_CAMPAIGN -> AppIcons.Image
+        NodeType.IMAGE_TO_VIDEO, NodeType.PRODUCT_AD, NodeType.PRODUCT_SWAP, NodeType.MULTI_SHOT_VIDEO, NodeType.PRODUCT_UGC -> AppIcons.Video
+        NodeType.TEXT_TO_SPEECH -> AppIcons.Audio
+        NodeType.MODEL3D_GENERATION -> AppIcons.Cube3D
+        NodeType.NOTE -> AppIcons.Edit
+        else -> AppIcons.Play
+    }
+}
+
 private sealed class RunRequest {
     data class Node(val nodeId: String) : RunRequest()
-    data object Workflow : RunRequest()
+    data class Workflow(val onlyEmpty: Boolean = true) : RunRequest()
 }
 
 private data class CreditCheckState(
@@ -132,6 +146,7 @@ fun EditorScreen(
     var newWorkflowName by remember(workflow?.name) { mutableStateOf(workflow?.name ?: "") }
     var creditCheckState by remember { mutableStateOf<CreditCheckState?>(null) }
     var showPurchaseCreditsSheet by remember { mutableStateOf(false) }
+    var showWorkflowRunSheet by remember { mutableStateOf(false) }
     var isCheckingCredits by remember { mutableStateOf(false) }
     val virtualCurrencies by PocketFlowPurchases.virtualCurrencies.collectAsState()
     val availableCreditsLabel = PocketFlowPurchases.getAvailableCreditsLabel(virtualCurrencies)
@@ -203,11 +218,11 @@ fun EditorScreen(
         val requiredCredits = when (request) {
             is RunRequest.Node -> workflow?.nodes?.find { it.id == request.nodeId }
                 ?.let { PocketFlowPurchases.estimateNodeCredits(it) } ?: 0
-            RunRequest.Workflow -> PocketFlowPurchases.estimateWorkflowCredits(workflow)
+            is RunRequest.Workflow -> PocketFlowPurchases.estimateWorkflowCredits(workflow, onlyEmpty = request.onlyEmpty)
         }
         val actionName = when (request) {
             is RunRequest.Node -> "node run"
-            RunRequest.Workflow -> "workflow run"
+            is RunRequest.Workflow -> if (request.onlyEmpty) "branch-wise empty nodes run" else "full workflow run"
         }
 
         creditCheckState = CreditCheckState(
@@ -237,7 +252,7 @@ fun EditorScreen(
             val previousBalance = PocketFlowPurchases.getAvailableCreditsBalance()
             val success = when (request) {
                 is RunRequest.Node -> engine.runNode(request.nodeId)
-                RunRequest.Workflow -> engine.runWorkflow()
+                is RunRequest.Workflow -> engine.runWorkflow(onlyEmpty = request.onlyEmpty)
             }
 
             if (success) {
@@ -768,34 +783,88 @@ fun EditorScreen(
                     }
                 }
                 
-                // Member avatar row — single clickable group opens all-members sheet
-                // Hidden for guest users (workflows are local-only, no collaboration).
-                if (!isGuest) {
-                var showMembersSheet by remember { mutableStateOf(false) }
-                val myUid = remember { app.ak25.pocketflow.storage.LocalStorage.loadString("appwrite_user_id") ?: "" }
-                
-                val allMembers = remember(workflow, memberPresences, myUid) {
-                    val membersList = try {
-                        kotlinx.serialization.json.Json.decodeFromString<List<app.ak25.pocketflow.services.WorkflowMember>>(workflow?.membersJson ?: "[]")
-                    } catch (e: Exception) {
-                        emptyList<app.ak25.pocketflow.services.WorkflowMember>()
-                    }
-                    membersList.map { m ->
-                        val active = memberPresences.find { it.userId.equals(m.userId, ignoreCase = true) }
-                        app.ak25.pocketflow.services.UserPresenceState(
-                            userId = m.userId,
-                            userName = m.userName,
-                            color = active?.color ?: app.ak25.pocketflow.services.WorkflowShareRepository.getMemberColor(m.userId),
-                            isActive = active != null,
-                            userEmail = m.userEmail
-                        )
-                    }.sortedByDescending { it.userId.equals(myUid, ignoreCase = true) }
-                }
-
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
+                    val isAnyNodeRunning = workflow?.nodes?.any { it.status == NodeStatus.RUNNING || it.status == NodeStatus.PENDING } == true
+
+                    // Overall Run button
+                    Surface(
+                        onClick = {
+                            if (isAnyNodeRunning) {
+                                engine.cancel()
+                            } else {
+                                showWorkflowRunSheet = true
+                            }
+                        },
+                        shape = RoundedCornerShape(12.dp),
+                        color = if (isAnyNodeRunning) Color(0xFFFF3B30).copy(alpha = 0.12f) else Color(0xFF007AFF),
+                        shadowElevation = if (isAnyNodeRunning) 0.dp else 2.dp,
+                        modifier = Modifier.height(36.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            if (isAnyNodeRunning) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(13.dp),
+                                    strokeWidth = 2.dp,
+                                    color = Color(0xFFFF3B30)
+                                )
+                                Text(
+                                    "Stop",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFFFF3B30)
+                                )
+                            } else {
+                                Icon(
+                                    imageVector = AppIcons.Play,
+                                    contentDescription = "Run Workflow",
+                                    tint = Color.White,
+                                    modifier = Modifier.size(13.dp)
+                                )
+                                Text(
+                                    "Run",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White
+                                )
+                            }
+                        }
+                    }
+
+                    // Member avatar row — single clickable group opens all-members sheet
+                    // Hidden for guest users (workflows are local-only, no collaboration).
+                    if (!isGuest) {
+                    var showMembersSheet by remember { mutableStateOf(false) }
+                    val myUid = remember { app.ak25.pocketflow.storage.LocalStorage.loadString("appwrite_user_id") ?: "" }
+                    
+                    val allMembers = remember(workflow, memberPresences, myUid) {
+                        val membersList = try {
+                            kotlinx.serialization.json.Json.decodeFromString<List<app.ak25.pocketflow.services.WorkflowMember>>(workflow?.membersJson ?: "[]")
+                        } catch (e: Exception) {
+                            emptyList<app.ak25.pocketflow.services.WorkflowMember>()
+                        }
+                        membersList.map { m ->
+                            val active = memberPresences.find { it.userId.equals(m.userId, ignoreCase = true) }
+                            app.ak25.pocketflow.services.UserPresenceState(
+                                userId = m.userId,
+                                userName = m.userName,
+                                color = active?.color ?: app.ak25.pocketflow.services.WorkflowShareRepository.getMemberColor(m.userId),
+                                isActive = active != null,
+                                userEmail = m.userEmail
+                            )
+                        }.sortedByDescending { it.userId.equals(myUid, ignoreCase = true) }
+                    }
+
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
                     Box(
                         modifier = Modifier
                             .clickable {
@@ -1032,6 +1101,7 @@ fun EditorScreen(
                             }
                         }
                     }
+                }
                 }
                 }
             }
@@ -1477,6 +1547,278 @@ fun EditorScreen(
                         modifier = Modifier.align(Alignment.CenterHorizontally)
                     ) {
                         Text("Cancel", color = Color.Gray)
+                    }
+                }
+            }
+        }
+
+        if (showWorkflowRunSheet) {
+            val nodesNeedingRun = remember(workflow) {
+                PocketFlowPurchases.getNodesNeedingRun(workflow)
+            }
+            val totalGenerativeNodes = remember(workflow) {
+                workflow?.nodes?.filter { it.type != NodeType.TEXT_PROMPT } ?: emptyList()
+            }
+            val emptyCredits = remember(workflow) {
+                PocketFlowPurchases.estimateWorkflowCredits(workflow, onlyEmpty = true)
+            }
+            val allCredits = remember(workflow) {
+                PocketFlowPurchases.estimateWorkflowCredits(workflow, onlyEmpty = false)
+            }
+            val completedNodesCount = totalGenerativeNodes.size - nodesNeedingRun.size
+
+            ModalBottomSheet(
+                onDismissRequest = { showWorkflowRunSheet = false },
+                containerColor = Color.White,
+                scrimColor = Color.Black.copy(alpha = 0.35f),
+                shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+                dragHandle = null
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 24.dp)
+                        .padding(bottom = 36.dp, top = 16.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.CenterHorizontally)
+                            .width(40.dp)
+                            .height(4.dp)
+                            .background(Color(0xFFE0E0E0), RoundedCornerShape(2.dp))
+                    )
+                    Spacer(Modifier.height(16.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(42.dp)
+                                .background(Color(0xFF007AFF).copy(alpha = 0.12f), CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = AppIcons.Play,
+                                contentDescription = null,
+                                tint = Color(0xFF007AFF),
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                        Column {
+                            Text(
+                                "Run Workflow",
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF1A1A1A)
+                            )
+                            Text(
+                                "${workflow?.name ?: "Workflow"} · Branch-wise execution",
+                                fontSize = 12.sp,
+                                color = Color(0xFF666666)
+                            )
+                        }
+                    }
+
+                    Spacer(Modifier.height(16.dp))
+
+                    // Summary Card
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFFF8F9FB)),
+                        shape = RoundedCornerShape(16.dp),
+                        border = BorderStroke(1.dp, Color(0xFFE9ECEF))
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text("Empty / Pending Nodes", fontSize = 13.sp, color = Color(0xFF666666))
+                                Surface(
+                                    color = if (nodesNeedingRun.isNotEmpty()) Color(0xFF007AFF).copy(alpha = 0.12f) else Color(0xFF34C759).copy(alpha = 0.12f),
+                                    shape = RoundedCornerShape(8.dp)
+                                ) {
+                                    Text(
+                                        if (nodesNeedingRun.isNotEmpty()) "${nodesNeedingRun.size} to run" else "All completed",
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = if (nodesNeedingRun.isNotEmpty()) Color(0xFF007AFF) else Color(0xFF34C759)
+                                    )
+                                }
+                            }
+
+                            if (completedNodesCount > 0) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text("Already Generated", fontSize = 13.sp, color = Color(0xFF666666))
+                                    Text("$completedNodesCount cached", fontSize = 13.sp, fontWeight = FontWeight.Medium, color = Color(0xFF34C759))
+                                }
+                            }
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text("Estimated Cost (Empty Nodes)", fontSize = 13.sp, color = Color(0xFF666666))
+                                Text(
+                                    if (emptyCredits > 0) "$emptyCredits credits" else "Free",
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF1A1A1A)
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(Modifier.height(14.dp))
+
+                    // Node List Breakdown
+                    Text(
+                        "Execution Plan",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color(0xFF1A1A1A)
+                    )
+                    Spacer(Modifier.height(8.dp))
+
+                    val allNodes = workflow?.nodes ?: emptyList()
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 160.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        items(items = allNodes) { node ->
+                            val isTextPrompt = node.type == NodeType.TEXT_PROMPT
+                            val willRun = nodesNeedingRun.any { needingNode -> needingNode.id == node.id }
+                            val isCompleted = !isTextPrompt && !node.outputUrl.isNullOrEmpty() && node.status == NodeStatus.COMPLETED
+
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .background(Color(0xFFFAFAFA), RoundedCornerShape(10.dp))
+                                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Icon(
+                                        imageVector = getNodeTypeIcon(node.type),
+                                        contentDescription = null,
+                                        tint = if (willRun) Color(0xFF007AFF) else Color(0xFF888888),
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    Column {
+                                        Text(
+                                            node.params["title"] ?: node.type.nodeName,
+                                            fontSize = 13.sp,
+                                            fontWeight = FontWeight.Medium,
+                                            color = Color(0xFF1A1A1A),
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                        Text(
+                                            node.type.nodeName,
+                                            fontSize = 10.sp,
+                                            color = Color(0xFF888888)
+                                        )
+                                    }
+                                }
+
+                                Surface(
+                                    color = when {
+                                        isTextPrompt -> Color(0xFFE0E0E0)
+                                        willRun -> Color(0xFF007AFF).copy(alpha = 0.12f)
+                                        isCompleted -> Color(0xFF34C759).copy(alpha = 0.12f)
+                                        else -> Color(0xFFE0E0E0)
+                                    },
+                                    shape = RoundedCornerShape(6.dp)
+                                ) {
+                                    Text(
+                                        when {
+                                            isTextPrompt -> "Input"
+                                            willRun -> "Will Run"
+                                            isCompleted -> "Cached"
+                                            else -> "Ready"
+                                        },
+                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = when {
+                                            isTextPrompt -> Color(0xFF666666)
+                                            willRun -> Color(0xFF007AFF)
+                                            isCompleted -> Color(0xFF34C759)
+                                            else -> Color(0xFF666666)
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    Spacer(Modifier.height(20.dp))
+
+                    // Action buttons
+                    Button(
+                        onClick = {
+                            showWorkflowRunSheet = false
+                            prepareRun(RunRequest.Workflow(onlyEmpty = true))
+                        },
+                        modifier = Modifier.fillMaxWidth().height(50.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF007AFF)),
+                        shape = RoundedCornerShape(14.dp)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Icon(AppIcons.Play, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
+                            Text(
+                                if (nodesNeedingRun.isNotEmpty()) "Run ${nodesNeedingRun.size} Empty Node${if (nodesNeedingRun.size > 1) "s" else ""} Branch-Wise" else "Re-run Branch-Wise",
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White,
+                                fontSize = 14.sp
+                            )
+                        }
+                    }
+
+                    if (completedNodesCount > 0) {
+                        Spacer(Modifier.height(8.dp))
+                        OutlinedButton(
+                            onClick = {
+                                showWorkflowRunSheet = false
+                                prepareRun(RunRequest.Workflow(onlyEmpty = false))
+                            },
+                            modifier = Modifier.fillMaxWidth().height(44.dp),
+                            shape = RoundedCornerShape(14.dp),
+                            border = BorderStroke(1.dp, Color(0xFFE0E0E0))
+                        ) {
+                            Text("Re-run All Nodes from Beginning ($allCredits credits)", fontSize = 12.sp, color = Color(0xFF666666), fontWeight = FontWeight.Medium)
+                        }
+                    }
+
+                    Spacer(Modifier.height(4.dp))
+                    TextButton(
+                        onClick = { showWorkflowRunSheet = false },
+                        modifier = Modifier.align(Alignment.CenterHorizontally)
+                    ) {
+                        Text("Cancel", color = Color.Gray, fontSize = 13.sp)
                     }
                 }
             }

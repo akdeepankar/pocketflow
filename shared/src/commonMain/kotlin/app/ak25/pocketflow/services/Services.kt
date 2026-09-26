@@ -570,7 +570,7 @@ class ExecutionEngine(private val controller: WorkflowController) {
         }
     }
 
-    suspend fun runWorkflow(): Boolean {
+    suspend fun runWorkflow(onlyEmpty: Boolean = false): Boolean {
         cancelled = false
         val workflow = controller.currentWorkflow.value ?: return false
         
@@ -603,12 +603,41 @@ class ExecutionEngine(private val controller: WorkflowController) {
             throw Exception("Cycle detected in workflow graph")
         }
 
-        for (nodeId in sorted) {
-            if (cancelled) return false
-            controller.updateNodeStatus(nodeId, NodeStatus.PENDING)
+        val nodesMap = workflow.nodes.associateBy { it.id }
+        val nodesToRun = mutableListOf<String>()
+        val freshlyRunSet = mutableSetOf<String>()
+
+        if (onlyEmpty) {
+            for (nodeId in sorted) {
+                val node = nodesMap[nodeId] ?: continue
+                if (node.type == NodeType.TEXT_PROMPT) {
+                    nodesToRun.add(nodeId)
+                    continue
+                }
+                val isEmptyOutput = node.outputUrl.isNullOrEmpty() || node.status != NodeStatus.COMPLETED
+                val hasUpstreamReRun = workflow.edges.any { it.targetNodeId == nodeId && it.sourceNodeId in freshlyRunSet }
+                if (isEmptyOutput || hasUpstreamReRun) {
+                    nodesToRun.add(nodeId)
+                    freshlyRunSet.add(nodeId)
+                }
+            }
+        } else {
+            nodesToRun.addAll(sorted)
         }
 
-        for (nodeId in sorted) {
+        if (nodesToRun.isEmpty()) {
+            return true
+        }
+
+        for (nodeId in nodesToRun) {
+            if (cancelled) return false
+            val node = nodesMap[nodeId]
+            if (node?.type != NodeType.TEXT_PROMPT) {
+                controller.updateNodeStatus(nodeId, NodeStatus.PENDING)
+            }
+        }
+
+        for (nodeId in nodesToRun) {
             if (cancelled) return false
             val success = runNode(nodeId)
             if (!success) return false
