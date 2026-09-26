@@ -142,8 +142,8 @@ export default {
             }
           }
 
-          // 2. Send Push Notification to the user if app is closed/backgrounded
-          if (recipientUserId && oneSignalRestKey) {
+          // 2. Send Push Notification strictly to the target user (never broadcast to all recipients)
+          if (recipientUserId && recipientUserId.trim().length > 0 && oneSignalRestKey) {
             try {
               await fetch("https://onesignal.com/api/v1/notifications", {
                 method: "POST",
@@ -155,7 +155,7 @@ export default {
                   app_id: ONESIGNAL_APP_ID,
                   target_channel: "push",
                   include_aliases: {
-                    external_id: [recipientUserId],
+                    external_id: [recipientUserId.trim()],
                   },
                   headings: {
                     en: isSuccess ? `Generation Complete (${workflowName})` : `Generation Failed (${workflowName})`,

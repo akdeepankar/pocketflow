@@ -869,6 +869,11 @@ class WorkflowController {
      * Add a collaboration note to a node. Records the current member's name so
      * the author can be shown next to the message. Persists + syncs to Supabase.
      */
+    /**
+     * Add a note to a node.
+     * Captures current user's id and name from local storage so
+     * the author can be shown next to the message. Persists + syncs to Supabase.
+     */
     fun addNodeNote(nodeId: String, text: String) {
         val trimmed = text.trim()
         if (trimmed.isEmpty()) return
@@ -882,14 +887,143 @@ class WorkflowController {
             createdAt = getCurrentTimeMillis()
         )
         patchNodeNotes(nodeId) { it + note }
-        sendNodeNoteNotification(nodeId, myUserId, myUserName, trimmed)
+        val mentionedUserIds = notifyMentionedMembers(nodeId = nodeId, text = trimmed, contextSource = "Note")
+        sendNodeNoteNotification(nodeId, myUserId, myUserName, trimmed, excludeUserIds = mentionedUserIds)
+    }
+
+    /**
+     * Get all active collaborators (and owner) of the current or specified workflow as WorkflowMember objects.
+     */
+    fun getWorkflowMembers(workflowId: String? = null): List<app.ak25.pocketflow.services.WorkflowMember> {
+        val targetWorkflow = if (!workflowId.isNullOrEmpty()) {
+            _workflows.value.find { it.id == workflowId } ?: _currentWorkflow.value
+        } else {
+            _currentWorkflow.value
+        } ?: return emptyList()
+
+        val parsed = try {
+            json.decodeFromString<List<app.ak25.pocketflow.services.WorkflowMember>>(targetWorkflow.membersJson)
+        } catch (e: Exception) {
+            emptyList()
+        }
+        val cachedShare = WorkflowShareRepository.getCachedSharePublic(targetWorkflow.id)
+        val cachedMembers = cachedShare?.members ?: emptyList()
+
+        val all = (parsed + cachedMembers).distinctBy { it.userId }
+        return all
+    }
+
+    /**
+     * Parse @mentions from text and send targeted OneSignal push notifications to mentioned workflow members.
+     * Returns the list of mentioned user IDs so callers can avoid duplicate notifications.
+     */
+    fun notifyMentionedMembers(
+        workflowId: String? = null,
+        nodeId: String,
+        text: String,
+        contextSource: String = "Note"
+    ): List<String> {
+        val targetWorkflow = if (!workflowId.isNullOrEmpty()) {
+            _workflows.value.find { it.id == workflowId } ?: _currentWorkflow.value
+        } else {
+            _currentWorkflow.value
+        } ?: return emptyList()
+
+        val myUserId = currentUserId()
+        val myUserName = store.loadString("user_name").orEmpty().ifEmpty { "A collaborator" }
+        val workflowName = targetWorkflow.name.ifEmpty { "Shared Workflow" }
+        val targetNode = targetWorkflow.nodes.find { it.id == nodeId }
+        val friendlyNodeName = targetNode?.let { node ->
+            if (node.type == NodeType.NOTE) (if (node.params["mode"] == "todo") "Checklist" else "Note")
+            else node.type.nodeName
+        } ?: "Node"
+
+        val mentionRegex = Regex("""@([a-zA-Z0-9_\.\-]+)""")
+        val rawMentions = mentionRegex.findAll(text).map { it.groupValues[1] }.toSet()
+        if (rawMentions.isEmpty()) return emptyList()
+
+        val allMembers = getWorkflowMembers(targetWorkflow.id)
+        val mentionedUserIds = allMembers.filter { member ->
+            rawMentions.any { mention ->
+                member.userName.equals(mention, ignoreCase = true) ||
+                member.userName.replace(" ", "").equals(mention, ignoreCase = true) ||
+                member.userEmail.substringBefore("@").equals(mention, ignoreCase = true)
+            }
+        }.map { it.userId }.filter { it.isNotBlank() && it != myUserId }.distinct()
+
+        if (mentionedUserIds.isEmpty()) return emptyList()
+
+        if (Env.ONESIGNAL_REST_API_KEY.isBlank()) {
+            println("[OneSignal-Mention] ⚠️ ONESIGNAL_REST_API_KEY is empty in Env.kt. Skipping push notification.")
+            return mentionedUserIds
+        }
+
+        println("""
+        [OneSignal-Mention] ══════════════════════════════════════════════════
+        [OneSignal-Mention] 💬 Sending @Mention Notification
+        [OneSignal-Mention] Author: $myUserName (uid='$myUserId')
+        [OneSignal-Mention] Workflow: '$workflowName' (${targetWorkflow.id})
+        [OneSignal-Mention] Node: $friendlyNodeName ($nodeId)
+        [OneSignal-Mention] Context: $contextSource
+        [OneSignal-Mention] Target Recipient External IDs: $mentionedUserIds
+        [OneSignal-Mention] ══════════════════════════════════════════════════
+        """.trimIndent())
+
+        val cleanSnippet = text.take(120).replace("\n", " ")
+        val heading = "$myUserName mentioned you in '$workflowName'"
+        val bodyText = "\"$cleanSnippet\" ($friendlyNodeName)"
+        val pushData = mapOf(
+            "workflow_id" to targetWorkflow.id,
+            "node_id" to nodeId,
+            "type" to "mention"
+        )
+        sendOneSignalPush(mentionedUserIds, heading, bodyText, pushData, "OneSignal-Mention")
+        return mentionedUserIds
+    }
+
+    /**
+     * Send a OneSignal push notification when a node or checklist task is assigned to a collaborator.
+     */
+    fun notifyTaskAssigned(
+        nodeId: String,
+        taskTitle: String,
+        assigneeUserId: String,
+        assigneeName: String
+    ) {
+        val targetWorkflow = _currentWorkflow.value ?: return
+        val myUserId = currentUserId()
+        if (assigneeUserId.isBlank() || assigneeUserId == myUserId) return
+
+        val myUserName = store.loadString("user_name").orEmpty().ifEmpty { "A collaborator" }
+        val workflowName = targetWorkflow.name.ifEmpty { "Shared Workflow" }
+        val cleanTaskTitle = taskTitle.trim().ifEmpty { "a task" }
+
+        println("""
+        [OneSignal-Assign] ══════════════════════════════════════════════════
+        [OneSignal-Assign] 📋 Sending Task Assignment Notification
+        [OneSignal-Assign] Assigned by: $myUserName (uid='$myUserId')
+        [OneSignal-Assign] Assigned to: $assigneeName (uid='$assigneeUserId')
+        [OneSignal-Assign] Task: '$cleanTaskTitle'
+        [OneSignal-Assign] Workflow: '$workflowName' (${targetWorkflow.id})
+        [OneSignal-Assign] ══════════════════════════════════════════════════
+        """.trimIndent())
+
+        val cleanHeading = "You were assigned a task 📋"
+        val cleanContent = "$myUserName assigned you to \"$cleanTaskTitle\" in '$workflowName'"
+        val pushData = mapOf(
+            "workflow_id" to targetWorkflow.id,
+            "node_id" to nodeId,
+            "type" to "task_assigned"
+        )
+        sendOneSignalPush(listOf(assigneeUserId), cleanHeading, cleanContent, pushData, "OneSignal-Assign")
     }
 
     private fun sendNodeNoteNotification(
         nodeId: String,
         authorUserId: String,
         authorName: String,
-        noteText: String
+        noteText: String,
+        excludeUserIds: List<String> = emptyList()
     ) {
         val targetWorkflow = _currentWorkflow.value ?: _workflows.value.find { wf -> wf.nodes.any { it.id == nodeId } } ?: return
         val targetNode = targetWorkflow.nodes.find { it.id == nodeId }
@@ -905,7 +1039,7 @@ class WorkflowController {
             else -> targetNode?.type?.nodeName ?: "Node"
         }
 
-        // Collect all distinct member user IDs in the workflow (excluding the note author)
+        // Collect all distinct member user IDs in the workflow (excluding the note author and already mentioned users)
         val memberIds = try {
             val parsed = json.decodeFromString<List<app.ak25.pocketflow.services.WorkflowMember>>(targetWorkflow.membersJson)
             parsed.map { it.userId }
@@ -916,7 +1050,7 @@ class WorkflowController {
         val cachedMembers = WorkflowShareRepository.getCachedSharePublic(targetWorkflow.id)?.members?.map { it.userId } ?: emptyList()
 
         val recipientUserIds = (memberIds + cachedMembers + listOf(targetWorkflow.ownerUserId))
-            .filter { it.isNotBlank() && it != authorUserId }
+            .filter { it.isNotBlank() && it != authorUserId && !excludeUserIds.contains(it) }
             .distinct()
 
         println("""
@@ -936,49 +1070,14 @@ class WorkflowController {
             return
         }
 
-        scope.launch(Dispatchers.Default) {
-            val client = io.ktor.client.HttpClient {
-                install(io.ktor.client.plugins.contentnegotiation.ContentNegotiation) {
-                    json(kotlinx.serialization.json.Json { ignoreUnknownKeys = true })
-                }
-            }
-            try {
-                val externalIdsJson = recipientUserIds.joinToString(",") { "\"$it\"" }
-                val targetJson = """
-                {
-                  "app_id": "7090ae90-1a87-4702-8cfd-2694e44301d9",
-                  "target_channel": "push",
-                  "include_aliases": {
-                    "external_id": [$externalIdsJson]
-                  },
-                  "headings": {"en": "New message on $friendlyName ($workflowName)"},
-                  "contents": {"en": "$authorName: $noteText"},
-                  "data": {
-                    "workflow_id": "${targetWorkflow.id}",
-                    "node_id": "$nodeId",
-                    "type": "node_note"
-                  }
-                }
-                """.trimIndent()
-                val response = client.post("https://onesignal.com/api/v1/notifications") {
-                    contentType(io.ktor.http.ContentType.Application.Json)
-                    header("Authorization", "Key ${Env.ONESIGNAL_REST_API_KEY}")
-                    setBody(targetJson)
-                }
-                val body = response.bodyAsText()
-                println("""
-                [OneSignal-NodeNote] 📥 Response Status: ${response.status}
-                [OneSignal-NodeNote] 📥 Response Body: $body
-                """.trimIndent())
-                if (body.contains("All included players are not subscribed")) {
-                    println("[OneSignal-NodeNote] ⚠️ Diagnostics: OneSignal found NO active push subscriptions for external_ids: $recipientUserIds. Ensure those users opened the app on a physical device, allowed notifications, and logged in.")
-                }
-            } catch (e: Exception) {
-                println("[OneSignal-NodeNote] ❌ Error sending notification: ${e.message}")
-            } finally {
-                client.close()
-            }
-        }
+        val heading = "New message on $friendlyName ($workflowName)"
+        val content = "$authorName: $noteText"
+        val pushData = mapOf(
+            "workflow_id" to targetWorkflow.id,
+            "node_id" to nodeId,
+            "type" to "node_note"
+        )
+        sendOneSignalPush(recipientUserIds, heading, content, pushData, "OneSignal-NodeNote")
     }
 
     /**
@@ -1038,57 +1137,13 @@ class WorkflowController {
             return
         }
 
-        scope.launch(Dispatchers.Default) {
-            val client = io.ktor.client.HttpClient {
-                install(io.ktor.client.plugins.contentnegotiation.ContentNegotiation) {
-                    json(kotlinx.serialization.json.Json { ignoreUnknownKeys = true })
-                }
-            }
-            try {
-                val externalIdsJson = recipientUserIds.joinToString(",") { "\"$it\"" }
-                val targetJson = """
-                {
-                  "app_id": "7090ae90-1a87-4702-8cfd-2694e44301d9",
-                  "target_channel": "push",
-                  "include_aliases": {
-                    "external_id": [$externalIdsJson]
-                  },
-                  "headings": {"en": "Workflow Ping 🔔"},
-                  "contents": {"en": "$myUserName pinged everyone in '$workflowName'!"},
-                  "data": {
-                    "workflow_id": "${targetWorkflow.id}",
-                    "type": "ping"
-                  }
-                }
-                """.trimIndent()
-                println("[OneSignal-Ping] 📤 Sending request payload to OneSignal:")
-                println(targetJson)
-                val response = client.post("https://onesignal.com/api/v1/notifications") {
-                    contentType(io.ktor.http.ContentType.Application.Json)
-                    header("Authorization", "Key ${Env.ONESIGNAL_REST_API_KEY}")
-                    setBody(targetJson)
-                }
-                val isSuccess = response.status.value in 200..299
-                val body = response.bodyAsText()
-                println("""
-                [OneSignal-Ping] 📥 Response Status: ${response.status}
-                [OneSignal-Ping] 📥 Response Body: $body
-                """.trimIndent())
-                if (body.contains("All included players are not subscribed")) {
-                    println("[OneSignal-Ping] ⚠️ Diagnostics: OneSignal found NO active push subscriptions for external_ids: $recipientUserIds. Ensure those users opened the app on a physical device, allowed notifications, and logged in.")
-                }
-                withContext(Dispatchers.Main) {
-                    onComplete?.invoke(isSuccess, if (isSuccess) "Ping sent to ${recipientUserIds.size} member(s)!" else "Failed to send ping")
-                }
-            } catch (e: Exception) {
-                println("[OneSignal-Ping] ❌ Error sending ping: ${e.message}")
-                withContext(Dispatchers.Main) {
-                    onComplete?.invoke(false, e.message ?: "Failed to send ping")
-                }
-            } finally {
-                client.close()
-            }
-        }
+        val heading = "Workflow Ping 🔔"
+        val content = "$myUserName pinged everyone in '$workflowName'!"
+        val pushData = mapOf(
+            "workflow_id" to targetWorkflow.id,
+            "type" to "ping"
+        )
+        sendOneSignalPush(recipientUserIds, heading, content, pushData, "OneSignal-Ping", onComplete)
     }
 
     /**
@@ -1147,6 +1202,90 @@ class WorkflowController {
         [OneSignal-Generation] ══════════════════════════════════════════════════
         """.trimIndent())
 
+        val heading = "Generation Completed ($workflowName)"
+        val content = "$myUserName generated $friendlyName in '$workflowName'"
+        val pushData = mapOf(
+            "workflow_id" to targetWorkflow.id,
+            "node_id" to nodeId,
+            "type" to "generation_complete"
+        )
+        sendOneSignalPush(recipientUserIds, heading, content, pushData, "OneSignal-Generation")
+    }
+
+    /**
+     * Send a OneSignal push notification to workflow collaborators when a checklist item is ticked or updated.
+     */
+    fun notifyNoteChecklistToggled(
+        nodeId: String,
+        itemText: String,
+        isChecked: Boolean
+    ) {
+        val targetWorkflow = _currentWorkflow.value ?: return
+        val myUserId = currentUserId()
+        val myUserName = store.loadString("user_name").orEmpty().ifEmpty { "A collaborator" }
+        val workflowName = targetWorkflow.name.ifEmpty { "Shared Workflow" }
+
+        val memberIds = try {
+            val parsed = json.decodeFromString<List<app.ak25.pocketflow.services.WorkflowMember>>(targetWorkflow.membersJson)
+            parsed.map { it.userId }
+        } catch (e: Exception) {
+            emptyList()
+        }
+
+        val cachedMembers = WorkflowShareRepository.getCachedSharePublic(targetWorkflow.id)?.members?.map { it.userId } ?: emptyList()
+
+        val recipientUserIds = (memberIds + cachedMembers + listOf(targetWorkflow.ownerUserId))
+            .filter { it.isNotBlank() && it != myUserId }
+            .distinct()
+
+        if (recipientUserIds.isEmpty()) return
+
+        val actionText = if (isChecked) "completed" else "unmarked"
+        val cleanItemText = itemText.trim().ifEmpty { "a checklist task" }
+        val headingText = if (isChecked) "Task Completed ($workflowName)" else "Checklist Updated ($workflowName)"
+        val contentText = "$myUserName $actionText \"$cleanItemText\" in '$workflowName'"
+
+        println("""
+        [OneSignal-Checklist] ══════════════════════════════════════════════════
+        [OneSignal-Checklist] 🚀 Sending Checklist Notification
+        [OneSignal-Checklist] User: $myUserName (uid='$myUserId')
+        [OneSignal-Checklist] Workflow: '$workflowName' (${targetWorkflow.id})
+        [OneSignal-Checklist] Node: $nodeId
+        [OneSignal-Checklist] Item: $cleanItemText (isChecked=$isChecked)
+        [OneSignal-Checklist] Target Recipient External IDs: $recipientUserIds
+        [OneSignal-Checklist] ══════════════════════════════════════════════════
+        """.trimIndent())
+
+        val pushData = mapOf(
+            "workflow_id" to targetWorkflow.id,
+            "node_id" to nodeId,
+            "type" to "checklist_toggle",
+            "is_checked" to isChecked.toString()
+        )
+        sendOneSignalPush(recipientUserIds, headingText, contentText, pushData, "OneSignal-Checklist")
+    }
+
+    private fun sendOneSignalPush(
+        recipientUserIds: List<String>,
+        heading: String,
+        content: String,
+        data: Map<String, String>,
+        tag: String = "OneSignal",
+        onComplete: ((Boolean, String) -> Unit)? = null
+    ) {
+        val validRecipients = recipientUserIds.filter { it.isNotBlank() }.distinct()
+        if (validRecipients.isEmpty()) {
+            println("[$tag] ⚠️ No recipients to notify.")
+            onComplete?.invoke(false, "No recipients to notify.")
+            return
+        }
+
+        if (Env.ONESIGNAL_REST_API_KEY.isBlank()) {
+            println("[$tag] ⚠️ ONESIGNAL_REST_API_KEY is empty in Env.kt. Skipping push notification.")
+            onComplete?.invoke(false, "OneSignal REST API key is not configured in Env.kt")
+            return
+        }
+
         scope.launch(Dispatchers.Default) {
             val client = io.ktor.client.HttpClient {
                 install(io.ktor.client.plugins.contentnegotiation.ContentNegotiation) {
@@ -1154,31 +1293,44 @@ class WorkflowController {
                 }
             }
             try {
-                val externalIdsJson = recipientUserIds.joinToString(",") { "\"$it\"" }
-                val targetJson = """
-                {
-                  "app_id": "7090ae90-1a87-4702-8cfd-2694e44301d9",
-                  "target_channel": "push",
-                  "include_aliases": {
-                    "external_id": [$externalIdsJson]
-                  },
-                  "headings": {"en": "Generation Completed ($workflowName)"},
-                  "contents": {"en": "$myUserName generated $friendlyName in '$workflowName'"},
-                  "data": {
-                    "workflow_id": "${targetWorkflow.id}",
-                    "node_id": "$nodeId",
-                    "type": "generation_complete"
-                  }
+                val payloadObj = buildJsonObject {
+                    put("app_id", "7090ae90-1a87-4702-8cfd-2694e44301d9")
+                    put("target_channel", "push")
+                    putJsonObject("include_aliases") {
+                        putJsonArray("external_id") {
+                            validRecipients.forEach { add(JsonPrimitive(it)) }
+                        }
+                    }
+                    putJsonObject("headings") { put("en", heading) }
+                    putJsonObject("contents") { put("en", content) }
+                    putJsonObject("data") {
+                        data.forEach { (k, v) -> put(k, v) }
+                    }
                 }
-                """.trimIndent()
+                val payloadString = payloadObj.toString()
+                println("[$tag] 📤 Sending request payload to OneSignal: $payloadString")
                 val response = client.post("https://onesignal.com/api/v1/notifications") {
                     contentType(io.ktor.http.ContentType.Application.Json)
                     header("Authorization", "Key ${Env.ONESIGNAL_REST_API_KEY}")
-                    setBody(targetJson)
+                    setBody(payloadString)
                 }
-                println("[OneSignal-Generation] 📥 Response Status: ${response.status} Body: ${response.bodyAsText()}")
+                val isSuccess = response.status.value in 200..299
+                val body = response.bodyAsText()
+                println("""
+                [$tag] 📥 Response Status: ${response.status}
+                [$tag] 📥 Response Body: $body
+                """.trimIndent())
+                if (body.contains("All included players are not subscribed")) {
+                    println("[$tag] ⚠️ Diagnostics: OneSignal found NO active push subscriptions for external_ids: $validRecipients. Ensure those users opened the app on a physical device, allowed notifications, and logged in.")
+                }
+                withContext(Dispatchers.Main) {
+                    onComplete?.invoke(isSuccess, if (isSuccess) "Notification sent to ${validRecipients.size} member(s)!" else "Failed to send notification")
+                }
             } catch (e: Exception) {
-                println("[OneSignal-Generation] ❌ Error sending generation notification: ${e.message}")
+                println("[$tag] ❌ Error sending notification: ${e.message}")
+                withContext(Dispatchers.Main) {
+                    onComplete?.invoke(false, e.message ?: "Failed to send notification")
+                }
             } finally {
                 client.close()
             }

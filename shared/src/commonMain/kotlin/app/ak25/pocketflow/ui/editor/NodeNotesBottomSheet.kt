@@ -98,6 +98,39 @@ fun NodeNotesBottomSheet(
 
             Spacer(Modifier.height(16.dp))
 
+            val workflowMembers = remember(workflow?.membersJson) {
+                controller.getWorkflowMembers(workflow?.id).filter { it.userId != myUserId }
+            }
+
+            if (workflowMembers.isNotEmpty()) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("Mention:", fontSize = 11.sp, color = Color(0xFF8E8E93))
+                    workflowMembers.take(4).forEach { member ->
+                        val handle = member.userName.ifEmpty { "member" }.replace(" ", "_")
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = Color(0xFFE8F2FF),
+                            modifier = Modifier.clickable {
+                                val prefix = if (newNote.isNotEmpty() && !newNote.endsWith(" ")) "$newNote " else newNote
+                                newNote = "$prefix@$handle "
+                            }
+                        ) {
+                            Text(
+                                text = "@$handle",
+                                fontSize = 11.sp,
+                                color = Color(0xFF0A84FF),
+                                fontWeight = FontWeight.Medium,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                            )
+                        }
+                    }
+                }
+            }
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,

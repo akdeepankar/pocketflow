@@ -1,4 +1,5 @@
 import AuthenticationServices
+import AVFoundation
 import Shared
 import SwiftUI
 import UserNotifications
@@ -19,6 +20,9 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
         _ application: UIApplication,
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
     ) -> Bool {
+        try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .default, options: [.mixWithOthers, .defaultToSpeaker])
+        try? AVAudioSession.sharedInstance().setActive(true)
+
         OneSignalManager.shared.initialize(launchOptions: launchOptions)
         UNUserNotificationCenter.current().delegate = self
         application.registerForRemoteNotifications()

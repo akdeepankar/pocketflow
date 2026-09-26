@@ -11,8 +11,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import kotlinx.coroutines.launch
+import androidx.compose.foundation.border
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
@@ -49,7 +51,8 @@ data class GeneratedAsset(
 
 @Composable
 fun AssetsScreen(
-    controller: WorkflowController
+    controller: WorkflowController,
+    onPreviewStateChanged: ((Boolean) -> Unit)? = null
 ) {
     val workflows by controller.workflows.collectAsState()
     
@@ -117,6 +120,7 @@ fun AssetsScreen(
         if (selectedAsset == null) {
             isPortraitPreview = false
         }
+        onPreviewStateChanged?.invoke(selectedAsset != null)
     }
 
     val filteredAssets = remember(assets, currentFilter) {
@@ -222,7 +226,7 @@ fun AssetsScreen(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(Color.White.copy(alpha = 0.6f))
+                    .background(Color.White)
                     .clickable(interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }, indication = null) { selectedAsset = null },
                 contentAlignment = Alignment.Center
             ) {
@@ -267,20 +271,20 @@ fun AssetsScreen(
                     var isPaused by remember { mutableStateOf(true) }
                     Box(modifier = Modifier
                         .fillMaxWidth(0.85f)
+                        .shadow(12.dp, RoundedCornerShape(24.dp))
                         .clip(RoundedCornerShape(24.dp))
-                        .background(Color(0xFFF5F5F7))
+                        .background(Color.White)
+                        .border(1.dp, Color.Black.copy(alpha = 0.06f), RoundedCornerShape(24.dp))
                         .padding(32.dp)
                     ) {
-                        if (!isPaused) {
-                            app.ak25.pocketflow.ui.editor.AsyncVideoPlayer(
-                                url = path,
-                                modifier = Modifier.size(0.dp),
-                                isMiniature = false,
-                                isPaused = isPaused,
-                                loop = false,
-                                onEnd = { isPaused = true }
-                            )
-                        }
+                        app.ak25.pocketflow.ui.editor.AsyncVideoPlayer(
+                            url = path,
+                            modifier = Modifier.size(1.dp).alpha(0.001f),
+                            isMiniature = false,
+                            isPaused = isPaused,
+                            loop = false,
+                            onEnd = { isPaused = true }
+                        )
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally,
                             modifier = Modifier.fillMaxWidth()

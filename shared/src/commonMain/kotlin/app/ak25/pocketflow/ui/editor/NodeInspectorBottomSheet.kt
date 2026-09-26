@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -246,8 +247,11 @@ fun NodeInspectorBottomSheet(
                         Label("Prompt")
                         ConfigTextField(
                             value = node.params["text"] ?: "",
-                            onValueChange = { controller.updateNodeParams(node.id, "text", it) },
-                            hint = "Enter prompt text..."
+                            onValueChange = {
+                                controller.updateNodeParams(node.id, "text", it)
+                                controller.notifyMentionedMembers(nodeId = node.id, text = it, contextSource = "Prompt")
+                            },
+                            hint = "Enter prompt text... (use @name to mention)"
                         )
                     }
                     NodeType.IMAGE_TO_VIDEO -> {
@@ -823,8 +827,11 @@ fun NodeInspectorBottomSheet(
                             Label("Note")
                             ConfigTextField(
                                 value = node.params["content"] ?: "",
-                                onValueChange = { controller.updateNodeParams(node.id, "content", it) },
-                                hint = "Write your note..."
+                                onValueChange = {
+                                    controller.updateNodeParams(node.id, "content", it)
+                                    controller.notifyMentionedMembers(nodeId = node.id, text = it, contextSource = "Note")
+                                },
+                                hint = "Write your note... (use @name to mention)"
                             )
                         } else {
                             val items = node.params["items"].orEmpty().split("\n").filter { it.isNotBlank() }
@@ -854,8 +861,10 @@ fun NodeInspectorBottomSheet(
                                                 .clip(RoundedCornerShape(6.dp))
                                                 .background(if (index in checked) nodeColor else Color(0xFFE5E5EA))
                                                 .clickable {
+                                                    val isNowChecked = index !in checked
                                                     val updated = if (index in checked) checked - index else checked + index
                                                     saveChecked(updated)
+                                                    controller.notifyNoteChecklistToggled(node.id, item, isNowChecked)
                                                 },
                                             contentAlignment = Alignment.Center
                                         ) {
@@ -909,7 +918,7 @@ fun NodeInspectorBottomSheet(
                                     value = newTask,
                                     onValueChange = { newTask = it },
                                     modifier = Modifier.weight(1f),
-                                    placeholder = { Text("New task...", fontSize = 13.sp, color = Color(0xFFAAAAAA)) },
+                                    placeholder = { Text("New task... (@name to assign)", fontSize = 13.sp, color = Color(0xFFAAAAAA)) },
                                     textStyle = androidx.compose.ui.text.TextStyle(fontSize = 13.sp, color = Color(0xFF1A1A1A)),
                                     maxLines = 1,
                                     shape = RoundedCornerShape(10.dp),
@@ -925,6 +934,7 @@ fun NodeInspectorBottomSheet(
                                         val text = newTask.trim()
                                         if (text.isNotEmpty()) {
                                             controller.updateNodeParams(node.id, "items", (items + text).joinToString("\n"))
+                                            controller.notifyMentionedMembers(nodeId = node.id, text = text, contextSource = "Task")
                                             newTask = ""
                                         }
                                     },
@@ -939,6 +949,52 @@ fun NodeInspectorBottomSheet(
                     else -> {
                         Label("Info")
                         Text("Configure this node by connecting it to other nodes.", fontSize = 12.sp, color = Color.Gray)
+                    }
+                }
+
+                val workflowMembers = remember(workflow?.membersJson) {
+                    controller.getWorkflowMembers(workflow?.id)
+                }
+                if (workflowMembers.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Label("Assignee")
+                    val currentAssigneeId = node.params["assignee_id"].orEmpty()
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        FilterChip(
+                            selected = currentAssigneeId.isEmpty(),
+                            onClick = {
+                                controller.updateNodeParams(node.id, "assignee_id", "")
+                                controller.updateNodeParams(node.id, "assignee_name", "")
+                            },
+                            label = { Text("Unassigned", fontSize = 12.sp) },
+                            shape = RoundedCornerShape(8.dp)
+                        )
+                        workflowMembers.forEach { member ->
+                            val isSelected = currentAssigneeId == member.userId
+                            FilterChip(
+                                selected = isSelected,
+                                onClick = {
+                                    if (!isSelected) {
+                                        controller.updateNodeParams(node.id, "assignee_id", member.userId)
+                                        controller.updateNodeParams(node.id, "assignee_name", member.userName)
+                                        controller.notifyTaskAssigned(
+                                            nodeId = node.id,
+                                            taskTitle = if (node.type == NodeType.NOTE) (node.params["content"]?.takeIf { it.isNotBlank() } ?: "Note / Checklist") else node.type.nodeName,
+                                            assigneeUserId = member.userId,
+                                            assigneeName = member.userName
+                                        )
+                                    }
+                                },
+                                label = { Text(member.userName.ifEmpty { "Member" }, fontSize = 12.sp) },
+                                shape = RoundedCornerShape(8.dp)
+                            )
+                        }
                     }
                 }
                 Spacer(modifier = Modifier.height(24.dp))

@@ -29,13 +29,14 @@ actual object LocalStorage {
     }
 
     actual fun readMediaFromTemp(path: String): ByteArray? {
+        val cleanPath = path.removePrefix("file://")
         val context = AndroidStorageContext.applicationContext
         val file = if (context != null) {
-            val filename = path.substringAfterLast('/')
+            val filename = cleanPath.substringAfterLast('/')
             val resolvedFile = File(context.filesDir, filename)
-            if (resolvedFile.exists()) resolvedFile else File(path)
+            if (resolvedFile.exists()) resolvedFile else File(cleanPath)
         } else {
-            File(path)
+            File(cleanPath)
         }
         if (!file.exists()) return null
         return try {
@@ -47,13 +48,16 @@ actual object LocalStorage {
 
     actual fun exportMediaToGallery(path: String): Boolean {
         val context = AndroidStorageContext.applicationContext ?: return false
-        val sourceFile = File(path)
+        val cleanPath = path.removePrefix("file://")
+        val filename = cleanPath.substringAfterLast('/')
+        val resolvedFile = if (context != null) File(context.filesDir, filename) else null
+        val sourceFile = if (resolvedFile?.exists() == true) resolvedFile else File(cleanPath)
         if (!sourceFile.exists()) return false
 
         return try {
             val contentResolver = context.contentResolver
-            val isVideo = path.endsWith(".mp4", ignoreCase = true)
-            val isAudio = path.endsWith(".mp3", ignoreCase = true) || path.endsWith(".wav", ignoreCase = true) || path.endsWith(".m4a", ignoreCase = true)
+            val isVideo = cleanPath.endsWith(".mp4", ignoreCase = true)
+            val isAudio = cleanPath.endsWith(".mp3", ignoreCase = true) || cleanPath.endsWith(".wav", ignoreCase = true) || cleanPath.endsWith(".m4a", ignoreCase = true)
             
             val contentValues = android.content.ContentValues().apply {
                 put(android.provider.MediaStore.MediaColumns.DISPLAY_NAME, sourceFile.name)
@@ -97,7 +101,10 @@ actual object LocalStorage {
 
     actual fun shareMedia(path: String): Boolean {
         val context = AndroidStorageContext.applicationContext ?: return false
-        val file = java.io.File(path)
+        val cleanPath = path.removePrefix("file://")
+        val filename = cleanPath.substringAfterLast('/')
+        val resolvedFile = if (context != null) File(context.filesDir, filename) else null
+        val file = if (resolvedFile?.exists() == true) resolvedFile else File(cleanPath)
         if (!file.exists()) return false
         
         return try {
@@ -106,7 +113,7 @@ actual object LocalStorage {
             
             val uri = android.net.Uri.fromFile(file)
             val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
-                type = if (path.endsWith(".mp4", ignoreCase = true)) "video/mp4" else if (path.endsWith(".mp3", ignoreCase = true)) "audio/mp3" else "image/png"
+                type = if (cleanPath.endsWith(".mp4", ignoreCase = true)) "video/mp4" else if (cleanPath.endsWith(".mp3", ignoreCase = true)) "audio/mp3" else "image/png"
                 putExtra(android.content.Intent.EXTRA_STREAM, uri)
                 addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
@@ -123,10 +130,15 @@ actual object LocalStorage {
     }
 
     actual fun resolveLocalPath(path: String): String {
-        val context = AndroidStorageContext.applicationContext ?: return path
-        val filename = path.substringAfterLast('/')
+        if (path.startsWith("http://") || path.startsWith("https://") || path.startsWith("data:") || path.startsWith("cache://")) {
+            return path
+        }
+        val context = AndroidStorageContext.applicationContext ?: return if (path.startsWith("file://")) path else "file://$path"
+        val cleanPath = path.removePrefix("file://")
+        val filename = cleanPath.substringAfterLast('/')
         val resolvedFile = File(context.filesDir, filename)
-        return if (resolvedFile.exists()) resolvedFile.absolutePath else path
+        val finalPath = if (resolvedFile.exists()) resolvedFile.absolutePath else cleanPath
+        return if (finalPath.startsWith("file://")) finalPath else "file://$finalPath"
     }
 
     actual fun showLocalNotification(title: String, body: String, workflowId: String?, nodeId: String?) {

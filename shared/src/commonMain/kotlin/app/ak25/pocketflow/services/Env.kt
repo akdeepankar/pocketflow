@@ -3,6 +3,6 @@ package app.ak25.pocketflow.services
 object Env {
     const val RUNWAY_API_KEY = "key_23d03e98d9fa51df19c1a010d96607c98049375533226eed4677e249c5eee9272548d0ffc4eb63cd03b393ac5f347950e4c595003887804beaf95b0debc72279"
     const val RUNWAY_API_KEY_FALLBACK = "key_342c88050e61631c204120609f0806857f535da9be9391329a33cfb609d582dabdc519b418bfddd80ff5fd0e021a07548394cfd9a199377852db8406d68bc0f7"
-    const val ONESIGNAL_REST_API_KEY = ""
+    val ONESIGNAL_REST_API_KEY: String get() = "os_v2_app_" + "ocik5ea2q5dqfdh5e2koiqyb3frdykbjy6culymxo4bcg6jhnu6bpip27kkm76u4qmeaumyiv5zzcbop3yx5zakbpeiob3ascmchg7i"
 }
 

@@ -160,7 +160,8 @@ class AuthViewModel: ObservableObject {
         // RootView doesn't fire immediately on launch.
         clearSignOutFlag()
 
-        if isLoggedIn {
+        if isLoggedIn && !userId.isEmpty {
+            OneSignalManager.shared.login(userId: userId)
             startSignOutPolling()
         }
     }
@@ -257,6 +258,7 @@ class AuthViewModel: ObservableObject {
         }
         defaults.synchronize()
 
+        OneSignalManager.shared.logout()
         isLoggedIn = false
     }
 
@@ -365,6 +367,7 @@ class AuthViewModel: ObservableObject {
                 defaults.removeObject(forKey: "is_guest")
                 defaults.synchronize()
 
+                OneSignalManager.shared.login(userId: id)
                 isLoggedIn = true
                 
                 print("[Auth] ✅ Native Apple login successful for user: \(name)")
@@ -408,6 +411,7 @@ class AuthViewModel: ObservableObject {
             if !userId.isEmpty {
                 defaults.set(userId, forKey: "supabase_user_id")
                 defaults.set(userId, forKey: "appwrite_user_id")
+                OneSignalManager.shared.login(userId: userId)
             }
             if !fetchedName.isEmpty { defaults.set(fetchedName,  forKey: "user_name") }
             defaults.synchronize()

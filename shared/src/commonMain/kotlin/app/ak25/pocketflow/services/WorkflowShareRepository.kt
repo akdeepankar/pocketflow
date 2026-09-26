@@ -428,6 +428,11 @@ object WorkflowShareRepository {
 
         if (recipientUserIds.isEmpty()) return
 
+        if (Env.ONESIGNAL_REST_API_KEY.isBlank()) {
+            println("[OneSignal-Join] ⚠️ ONESIGNAL_REST_API_KEY is empty in Env.kt. Skipping push notification.")
+            return
+        }
+
         println("[OneSignal-Join] 🔔 Notifying workflow members that $joinedUserName joined workflow '${share.workflowName}'")
         println("[OneSignal-Join] Target Recipient External IDs: $recipientUserIds")
 
@@ -438,29 +443,28 @@ object WorkflowShareRepository {
                 }
             }
             try {
-                val externalIdsJson = recipientUserIds.joinToString(",") { "\"$it\"" }
                 val workflowTitle = share.workflowName.ifEmpty { "Shared Workflow" }
-                val targetJson = """
-                {
-                  "app_id": "7090ae90-1a87-4702-8cfd-2694e44301d9",
-                  "target_channel": "push",
-                  "include_aliases": {
-                    "external_id": [$externalIdsJson]
-                  },
-                  "headings": {"en": "$workflowTitle"},
-                  "contents": {"en": "$joinedUserName joined the workflow! 🚀"},
-                  "data": {
-                    "workflow_id": "${share.workflowId}",
-                    "type": "member_joined"
-                  }
+                val payloadObj = buildJsonObject {
+                    put("app_id", "7090ae90-1a87-4702-8cfd-2694e44301d9")
+                    put("target_channel", "push")
+                    putJsonObject("include_aliases") {
+                        putJsonArray("external_id") {
+                            recipientUserIds.forEach { add(JsonPrimitive(it)) }
+                        }
+                    }
+                    putJsonObject("headings") { put("en", workflowTitle) }
+                    putJsonObject("contents") { put("en", "$joinedUserName joined the workflow! 🚀") }
+                    putJsonObject("data") {
+                        put("workflow_id", share.workflowId)
+                        put("type", "member_joined")
+                    }
                 }
-                """.trimIndent()
-                println("[OneSignal-Join] 📤 Sending request payload to OneSignal:")
-                println(targetJson)
+                val payloadString = payloadObj.toString()
+                println("[OneSignal-Join] 📤 Sending request payload to OneSignal: $payloadString")
                 val response = client.post("https://onesignal.com/api/v1/notifications") {
                     contentType(io.ktor.http.ContentType.Application.Json)
                     header("Authorization", "Key ${Env.ONESIGNAL_REST_API_KEY}")
-                    setBody(targetJson)
+                    setBody(payloadString)
                 }
                 println("[OneSignal-Join] 📥 Response Status: ${response.status} Body: ${response.bodyAsText()}")
             } catch (e: Exception) {
@@ -482,6 +486,11 @@ object WorkflowShareRepository {
 
         if (recipientUserIds.isEmpty()) return
 
+        if (Env.ONESIGNAL_REST_API_KEY.isBlank()) {
+            println("[OneSignal-Leave] ⚠️ ONESIGNAL_REST_API_KEY is empty in Env.kt. Skipping push notification.")
+            return
+        }
+
         println("[OneSignal-Leave] 🔔 Notifying workflow members that $leftUserName left workflow '${share.workflowName}'")
         println("[OneSignal-Leave] Target Recipient External IDs: $recipientUserIds")
 
@@ -492,29 +501,28 @@ object WorkflowShareRepository {
                 }
             }
             try {
-                val externalIdsJson = recipientUserIds.joinToString(",") { "\"$it\"" }
                 val workflowTitle = share.workflowName.ifEmpty { "Shared Workflow" }
-                val targetJson = """
-                {
-                  "app_id": "7090ae90-1a87-4702-8cfd-2694e44301d9",
-                  "target_channel": "push",
-                  "include_aliases": {
-                    "external_id": [$externalIdsJson]
-                  },
-                  "headings": {"en": "$workflowTitle"},
-                  "contents": {"en": "$leftUserName left the workflow."},
-                  "data": {
-                    "workflow_id": "${share.workflowId}",
-                    "type": "member_left"
-                  }
+                val payloadObj = buildJsonObject {
+                    put("app_id", "7090ae90-1a87-4702-8cfd-2694e44301d9")
+                    put("target_channel", "push")
+                    putJsonObject("include_aliases") {
+                        putJsonArray("external_id") {
+                            recipientUserIds.forEach { add(JsonPrimitive(it)) }
+                        }
+                    }
+                    putJsonObject("headings") { put("en", workflowTitle) }
+                    putJsonObject("contents") { put("en", "$leftUserName left the workflow.") }
+                    putJsonObject("data") {
+                        put("workflow_id", share.workflowId)
+                        put("type", "member_left")
+                    }
                 }
-                """.trimIndent()
-                println("[OneSignal-Leave] 📤 Sending request payload to OneSignal:")
-                println(targetJson)
+                val payloadString = payloadObj.toString()
+                println("[OneSignal-Leave] 📤 Sending request payload to OneSignal: $payloadString")
                 val response = client.post("https://onesignal.com/api/v1/notifications") {
                     contentType(io.ktor.http.ContentType.Application.Json)
                     header("Authorization", "Key ${Env.ONESIGNAL_REST_API_KEY}")
-                    setBody(targetJson)
+                    setBody(payloadString)
                 }
                 println("[OneSignal-Leave] 📥 Response Status: ${response.status} Body: ${response.bodyAsText()}")
             } catch (e: Exception) {

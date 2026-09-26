@@ -17,6 +17,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.shadow
 import androidx.compose.foundation.border
 import androidx.compose.ui.geometry.Offset
@@ -1778,20 +1779,20 @@ fun EditorScreen(
                     var isPaused by remember { mutableStateOf(true) }
                     Box(modifier = Modifier
                         .fillMaxWidth(0.85f)
+                        .shadow(12.dp, RoundedCornerShape(24.dp))
                         .clip(RoundedCornerShape(24.dp))
-                        .background(Color(0xFFF5F5F7))
+                        .background(Color.White)
+                        .border(1.dp, Color.Black.copy(alpha = 0.06f), RoundedCornerShape(24.dp))
                         .padding(32.dp)
                     ) {
-                        if (!isPaused) {
-                            app.ak25.pocketflow.ui.editor.AsyncVideoPlayer(
-                                url = viewingMediaUrl!!,
-                                modifier = Modifier.size(0.dp),
-                                isMiniature = false,
-                                isPaused = isPaused,
-                                loop = false,
-                                onEnd = { isPaused = true }
-                            )
-                        }
+                        app.ak25.pocketflow.ui.editor.AsyncVideoPlayer(
+                            url = viewingMediaUrl!!,
+                            modifier = Modifier.size(1.dp).alpha(0.001f),
+                            isMiniature = false,
+                            isPaused = isPaused,
+                            loop = false,
+                            onEnd = { isPaused = true }
+                        )
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally,
                             modifier = Modifier.fillMaxWidth()
@@ -1903,7 +1904,7 @@ fun EditorScreen(
                             
                             coroutineScope.launch {
                                 var path = targetUrl
-                                val workflowNode = workflow?.nodes?.find { it.outputUrl == targetUrl }
+                                val workflowNode = workflow?.nodes?.find { it.outputUrl == targetUrl || it.outputLocalPath == targetUrl }
                                 if (workflowNode?.outputLocalPath != null) {
                                     path = workflowNode.outputLocalPath!!
                                 }
@@ -1954,7 +1955,7 @@ fun EditorScreen(
                             
                             coroutineScope.launch {
                                 var path = targetUrl
-                                val workflowNode = workflow?.nodes?.find { it.outputUrl == targetUrl }
+                                val workflowNode = workflow?.nodes?.find { it.outputUrl == targetUrl || it.outputLocalPath == targetUrl }
                                 if (workflowNode?.outputLocalPath != null) {
                                     path = workflowNode.outputLocalPath!!
                                 }

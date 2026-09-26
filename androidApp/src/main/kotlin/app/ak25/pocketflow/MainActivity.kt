@@ -70,7 +70,8 @@ class MainActivity : ComponentActivity() {
         evaluateSubscription(OneSignal.User.pushSubscription.id)
 
         // Auto-login existing user
-        val storedUid = app.ak25.pocketflow.storage.LocalStorage.loadString("appwrite_user_id").orEmpty()
+        val storedUid = (app.ak25.pocketflow.storage.LocalStorage.loadString("supabase_user_id")
+            ?: app.ak25.pocketflow.storage.LocalStorage.loadString("appwrite_user_id")).orEmpty()
         if (storedUid.isNotEmpty()) {
             OneSignal.login(storedUid)
             OneSignal.User.addAlias("external_id", storedUid)

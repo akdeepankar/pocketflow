@@ -31,7 +31,18 @@ class ExecutionEngine(private val controller: WorkflowController) {
     fun isRunning(nodeId: String): Boolean = activeRuns.contains(nodeId)
 
     private suspend fun resolveNodeOutput(sourceNode: app.ak25.pocketflow.models.WorkflowNode): String? {
-        return sourceNode.outputUrl ?: sourceNode.outputLocalPath ?: (if (sourceNode.type == NodeType.UPLOADED_IMAGE) sourceNode.params["imageUri"] else null)
+        val localExists = if (!sourceNode.outputLocalPath.isNullOrEmpty()) {
+            try {
+                val firstPath = sourceNode.outputLocalPath!!.split(",").firstOrNull()?.trim() ?: sourceNode.outputLocalPath!!
+                app.ak25.pocketflow.storage.LocalStorage.readMediaFromTemp(firstPath) != null
+            } catch (e: Exception) { false }
+        } else false
+
+        return if (localExists && !sourceNode.outputLocalPath.isNullOrEmpty()) {
+            sourceNode.outputLocalPath
+        } else {
+            sourceNode.outputUrl ?: sourceNode.outputLocalPath ?: (if (sourceNode.type == NodeType.UPLOADED_IMAGE) sourceNode.params["imageUri"] else null)
+        }
     }
 
     private var cancelled = false

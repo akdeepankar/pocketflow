@@ -40,7 +40,7 @@ import Shared
             OneSignal.login(storedUid)
             OneSignal.User.addAlias(label: "external_id", id: storedUid)
             OneSignal.User.pushSubscription.optIn()
-            print("OneSignal: Auto logged in stored user: \(storedUid)")
+            print("[OneSignal-iOS] 👤 Auto logged in stored user: \(storedUid)")
         }
         
         // Evaluate subscription state immediately
@@ -61,7 +61,7 @@ import Shared
         
         // Unpause in-app messages after a 2.0s delay to allow SwiftUI / UIKit window to become key and visible
         DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-            print("OneSignal: Unpausing In-App Messages now that UI window is ready.")
+            print("[OneSignal-iOS] Unpausing In-App Messages now that UI window is ready.")
             OneSignal.InAppMessages.paused = false
         }
     }

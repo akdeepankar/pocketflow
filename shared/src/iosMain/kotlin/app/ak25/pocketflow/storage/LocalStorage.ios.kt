@@ -119,9 +119,11 @@ actual object LocalStorage {
     }
 
     actual fun resolveLocalPath(path: String): String {
-        val hasFilePrefix = path.startsWith("file://")
+        if (path.startsWith("http://") || path.startsWith("https://") || path.startsWith("data:") || path.startsWith("cache://")) {
+            return path
+        }
         val resolved = resolveSandboxPath(path)
-        return if (hasFilePrefix && !resolved.startsWith("file://")) "file://$resolved" else resolved
+        return if (resolved.startsWith("file://")) resolved else "file://$resolved"
     }
 
     actual fun showLocalNotification(title: String, body: String, workflowId: String?, nodeId: String?) {

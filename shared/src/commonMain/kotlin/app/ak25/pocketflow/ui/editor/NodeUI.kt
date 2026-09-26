@@ -12,6 +12,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
@@ -227,6 +228,24 @@ fun NodeUI(
                         maxLines = 1,
                         overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                     )
+                    val assigneeName = node.params["assignee_name"]
+                    if (!assigneeName.isNullOrBlank()) {
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Surface(
+                            shape = RoundedCornerShape(6.dp),
+                            color = nodeColor.copy(alpha = 0.15f),
+                        ) {
+                            Text(
+                                text = "👤 $assigneeName",
+                                fontSize = 9.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = nodeColor,
+                                maxLines = 1,
+                                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                            )
+                        }
+                    }
                 }
                 
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -254,14 +273,24 @@ fun NodeUI(
                             }
                         }
                     }
-                    val mediaUrl = node.outputUrl ?: (if (node.type == NodeType.UPLOADED_IMAGE) node.params["imageUri"] else null)
+                    val localExists = if (!node.outputLocalPath.isNullOrEmpty()) {
+                        try {
+                            val firstPath = node.outputLocalPath!!.split(",").firstOrNull()?.trim() ?: node.outputLocalPath!!
+                            app.ak25.pocketflow.storage.LocalStorage.readMediaFromTemp(firstPath) != null
+                        } catch (e: Exception) { false }
+                    } else false
+                    val mediaUrl = if (localExists && !node.outputLocalPath.isNullOrEmpty()) {
+                        node.outputLocalPath
+                    } else {
+                        node.outputUrl ?: (if (node.type == NodeType.UPLOADED_IMAGE) node.params["imageUri"] else null)
+                    }
                     val hasOutput = !mediaUrl.isNullOrBlank()
                     if (hasOutput && node.type != NodeType.MARKETING_STOCK_IMAGE && node.type != NodeType.PRODUCT_CAMPAIGN) {
                         Box(
                             modifier = Modifier
                                 .size(28.dp)
                                 .background(nodeColor.copy(alpha = 0.12f), RoundedCornerShape(8.dp))
-                                .clickable(onClick = { onViewMedia(mediaUrl!!) }),
+                                .clickable(onClick = { onViewMedia(mediaUrl) }),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(AppIcons.Eye, contentDescription = "View", tint = nodeColor, modifier = Modifier.size(16.dp))
@@ -368,8 +397,10 @@ fun NodeUI(
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .clickable {
+                                                val isNowChecked = index !in checkedMutable
                                                 val updated = if (index in checkedMutable) checkedMutable - index else checkedMutable + index
                                                 controller.updateNodeParams(node.id, "checked", updated.sorted().joinToString(","))
+                                                controller.notifyNoteChecklistToggled(node.id, item, isNowChecked)
                                             }
                                             .padding(vertical = 2.dp)
                                     ) {
@@ -439,7 +470,17 @@ fun NodeUI(
                     Spacer(modifier = Modifier.height(10.dp))
                 }
                 
-                val mediaUrl = node.outputUrl ?: (if (node.type == NodeType.UPLOADED_IMAGE) node.params["imageUri"] else null)
+                val localExists = if (!node.outputLocalPath.isNullOrEmpty()) {
+                    try {
+                        val firstPath = node.outputLocalPath!!.split(",").firstOrNull()?.trim() ?: node.outputLocalPath!!
+                        app.ak25.pocketflow.storage.LocalStorage.readMediaFromTemp(firstPath) != null
+                    } catch (e: Exception) { false }
+                } else false
+                val mediaUrl = if (localExists && !node.outputLocalPath.isNullOrEmpty()) {
+                    node.outputLocalPath
+                } else {
+                    node.outputUrl ?: (if (node.type == NodeType.UPLOADED_IMAGE) node.params["imageUri"] else null)
+                }
                 val isCompleted = node.status == NodeStatus.COMPLETED || (node.type == NodeType.UPLOADED_IMAGE && !mediaUrl.isNullOrBlank())
 
                 if (isCompleted && !mediaUrl.isNullOrBlank()) {
@@ -525,16 +566,15 @@ fun NodeUI(
                                     .clickable { isAudioPaused = !isAudioPaused }
                                     .background(Color(0xFFE8F5E9))
                                     .padding(8.dp)
-                            ) {                                if (!isAudioPaused) {
-                                    AsyncVideoPlayer(
-                                        url = mediaUrl,
-                                        modifier = Modifier.size(0.dp),
-                                        isMiniature = false,
-                                        isPaused = isAudioPaused,
-                                        loop = false,
-                                        onEnd = { isAudioPaused = true }
-                                    )
-                                }
+                            ) {
+                                AsyncVideoPlayer(
+                                    url = mediaUrl,
+                                    modifier = Modifier.size(1.dp).alpha(0.001f),
+                                    isMiniature = false,
+                                    isPaused = isAudioPaused,
+                                    loop = false,
+                                    onEnd = { isAudioPaused = true }
+                                )
                                 androidx.compose.foundation.layout.Row(verticalAlignment = Alignment.CenterVertically) {
                                     Box(
                                         modifier = Modifier

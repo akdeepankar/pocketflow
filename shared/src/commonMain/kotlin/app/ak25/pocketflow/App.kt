@@ -178,6 +178,8 @@ fun App() {
             )
         } else if (currentScreen == Screen.HOME || currentScreen == Screen.SETTINGS || currentScreen == Screen.ASSETS) {
             val coroutineScope = rememberCoroutineScope()
+            var isAssetPreviewOpen by remember { mutableStateOf(false) }
+
             Box(modifier = Modifier.fillMaxSize()) {
                 HorizontalPager(
                     state = pagerState,
@@ -203,7 +205,8 @@ fun App() {
                             }
                         )
                         1 -> app.ak25.pocketflow.ui.assets.AssetsScreen(
-                            controller = controller
+                            controller = controller,
+                            onPreviewStateChanged = { isAssetPreviewOpen = it }
                         )
                         2 -> SettingsScreen(
                             onBack = { currentScreen = Screen.HOME },
@@ -216,7 +219,7 @@ fun App() {
                 }
 
                 // Modern floating bottom navigation bar with transparent backside and reduced top spacing padding
-                if (!isPaywallOpen) {
+                if (!isPaywallOpen && !isAssetPreviewOpen) {
                     Box(
                         modifier = Modifier
                             .align(Alignment.BottomCenter)
