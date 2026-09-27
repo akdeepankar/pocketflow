@@ -275,10 +275,14 @@ Deno.serve(async (req: Request) => {
             const t = resolveOutput(e.sourceNodeId);
             if (t) text = t;
           });
+          const voicePreset = node.params["voicePreset"] || "Maya";
           payload = {
             model: "eleven_multilingual_v2",
             promptText: text || "Hello, this is a test speech generation.",
-            voicePreset: node.params["voicePreset"] || "Maya",
+            voice: {
+              type: "runway-preset",
+              presetId: voicePreset,
+            },
           };
         } else {
           // Fallback for custom or recipe endpoints
