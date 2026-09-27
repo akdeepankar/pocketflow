@@ -176,6 +176,7 @@ class ExecutionEngine(private val controller: WorkflowController) {
                 loopAttempt++
                 try {
                     outputResult = if (!currentJobId.isNullOrEmpty()) {
+                        runwayService.triggerLiveActivityPolling(currentJobId)
                         runwayService.pollAndDownloadTask(currentJobId, node.type)
                     } else {
                         executeNode(nodeId)

@@ -78,7 +78,7 @@ class RunwayService {
      *   1. Try via Supabase Edge Function `runway-generate` (API key stays server-side).
      *   2. If that fails (JWT absent, function not deployed), fall back to direct call.
      */
-    private suspend fun triggerLiveActivityPolling(jobId: String) {
+    suspend fun triggerLiveActivityPolling(jobId: String) {
         val meta = activeLiveActivityMetadata ?: return
         try {
             SupabaseRepository.pollLiveActivityJob(

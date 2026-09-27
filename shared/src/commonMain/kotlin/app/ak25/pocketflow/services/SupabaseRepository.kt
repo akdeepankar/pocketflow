@@ -373,10 +373,12 @@ object SupabaseRepository {
                     put("recipientUserId", uid)
                 }
             }
+            println("[Supabase] 📡 Invoking poll-job edge function for jobId=$jobId, activityId=${liveActivity?.get("activityId")}")
             val response = supabaseClient.functions.invoke("poll-job", body.toString())
+            println("[Supabase] 📡 poll-job edge function response status: ${response.status.value}")
             response.status.value in 200..299
         } catch (e: Exception) {
-            println("[Supabase] pollLiveActivityJob exception: ${e.message}")
+            println("[Supabase] ❌ pollLiveActivityJob exception: ${e.message}")
             false
         }
     }
