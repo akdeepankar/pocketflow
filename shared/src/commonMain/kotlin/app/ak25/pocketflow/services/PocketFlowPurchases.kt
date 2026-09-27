@@ -92,8 +92,20 @@ object PocketFlowPurchases {
     fun evaluateCreditBalanceTriggers(balance: Int?) {
         if (balance == null) return
         val balanceStr = balance.toString()
+        // Message personalization tags & triggers for OneSignal Liquid syntax:
+        // e.g. {{ user.tags.credits | default: '0' }}, {{ user.tags.credits_count }}, {{ user.tags.credits_balance }}
+        app.ak25.pocketflow.platform.OneSignalBridgeHolder.addTrigger("credits", balanceStr)
+        app.ak25.pocketflow.platform.OneSignalBridgeHolder.addTag("credits", balanceStr)
+        app.ak25.pocketflow.platform.OneSignalBridgeHolder.addTrigger("credits_count", balanceStr)
+        app.ak25.pocketflow.platform.OneSignalBridgeHolder.addTag("credits_count", balanceStr)
+        app.ak25.pocketflow.platform.OneSignalBridgeHolder.addTrigger("credit_count", balanceStr)
+        app.ak25.pocketflow.platform.OneSignalBridgeHolder.addTag("credit_count", balanceStr)
         app.ak25.pocketflow.platform.OneSignalBridgeHolder.addTrigger("credits_balance", balanceStr)
         app.ak25.pocketflow.platform.OneSignalBridgeHolder.addTag("credits_balance", balanceStr)
+        app.ak25.pocketflow.platform.OneSignalBridgeHolder.addTrigger("credit_balance", balanceStr)
+        app.ak25.pocketflow.platform.OneSignalBridgeHolder.addTag("credit_balance", balanceStr)
+        app.ak25.pocketflow.platform.OneSignalBridgeHolder.addTrigger("available_credits", balanceStr)
+        app.ak25.pocketflow.platform.OneSignalBridgeHolder.addTag("available_credits", balanceStr)
 
         if (balance < 50) {
             println("""
@@ -104,6 +116,7 @@ object PocketFlowPurchases {
             [OneSignal-IAM] Setting Trigger: 'credits_low' = 'true'
             [OneSignal-IAM] Setting Trigger: 'action' = 'low_credits'
             [OneSignal-IAM] Setting Tag: 'has_low_credits' = 'true'
+            [OneSignal-IAM] Setting Personalization Tag: 'credits' = '$balanceStr'
             [OneSignal-IAM] ══════════════════════════════════════════════════
             """.trimIndent())
             app.ak25.pocketflow.platform.OneSignalBridgeHolder.addTrigger("credits_less_than_50", "true")
