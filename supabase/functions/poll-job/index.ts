@@ -20,7 +20,15 @@ Deno.serve(async (req: Request) => {
   let body: Record<string, any>;
   try {
     const rawText = await req.text();
-    body = JSON.parse(rawText);
+    let parsed = JSON.parse(rawText);
+    while (typeof parsed === "string") {
+      try {
+        parsed = JSON.parse(parsed);
+      } catch {
+        break;
+      }
+    }
+    body = (parsed && typeof parsed === "object") ? parsed : {};
   } catch (err) {
     return new Response(JSON.stringify({ success: false, error: "Invalid JSON body" }), {
       status: 400,

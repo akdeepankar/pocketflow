@@ -337,7 +337,7 @@ object SupabaseRepository {
                 put("endpoint", endpoint)
                 put("payload", payload)
             }
-            val response = supabaseClient.functions.invoke("runway-generate", body.toString())
+            val response = supabaseClient.functions.invoke("runway-generate", body)
             val responseText = response.bodyAsText()
             val parsed = json.parseToJsonElement(responseText).jsonObject
             if (parsed["success"]?.jsonPrimitive?.booleanOrNull == true) {
@@ -374,7 +374,7 @@ object SupabaseRepository {
                 }
             }
             println("[Supabase] 📡 Invoking poll-job edge function for jobId=$jobId, activityId=${liveActivity?.get("activityId")}")
-            val response = supabaseClient.functions.invoke("poll-job", body.toString())
+            val response = supabaseClient.functions.invoke("poll-job", body)
             println("[Supabase] 📡 poll-job edge function response status: ${response.status.value}")
             response.status.value in 200..299
         } catch (e: Exception) {
