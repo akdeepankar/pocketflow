@@ -189,12 +189,23 @@ Deno.serve(async (req: Request) => {
           });
         }
 
+        // Helper to format aspect ratios for text_to_image and video models
+        const getRatio = (ar: string | undefined, isVideo: boolean): string => {
+          const ratio = ar || "16:9";
+          if (isVideo) {
+            return ratio === "9:16" ? "720:1280" : "1280:720";
+          }
+          if (ratio === "9:16") return "768:1344";
+          if (ratio === "1:1") return "1024:1024";
+          return "1344:768";
+        };
+
         // Build request body for Runway API based on node type
         let endpoint = "";
         let payload: Record<string, any> = {};
 
         if (nodeTypeName === "IMAGE_GENERATION") {
-          endpoint = "/image_to_video";
+          endpoint = "/text_to_image";
           let prompt = node.params["prompt"] || "";
           const refUris: string[] = [];
 
@@ -208,14 +219,17 @@ Deno.serve(async (req: Request) => {
             }
           });
 
+          const modelName = node.params["model"] || "gemini_image3_pro";
           payload = {
-            model: node.params["model"] || "gemini_image3_pro",
-            promptText: prompt,
-            ratio: node.params["aspectRatio"] || "16:9",
+            model: modelName,
+            promptText: prompt || "A high quality detailed image",
+            ratio: getRatio(node.params["aspectRatio"], false),
           };
-          if (refUris.length > 0) payload.referenceImageUris = refUris.slice(0, 2);
-        } else if (nodeTypeName === "IMAGE_TO_VIDEO") {
-          endpoint = "/image_to_video";
+
+          if (refUris.length > 0 && modelName === "gemini_image3_pro") {
+            payload.referenceImages = refUris.slice(0, 2).map((uri) => ({ uri }));
+          }
+        } else if (nodeTypeName === "IMAGE_TO_VIDEO" || nodeTypeName === "VIDEO_GENERATION") {
           const imageUris: string[] = [];
           workflow.edges.filter((e) => e.targetNodeId === node.id && e.targetPortId === "image").forEach((e) => {
             const img = resolveOutput(e.sourceNodeId);
@@ -228,15 +242,33 @@ Deno.serve(async (req: Request) => {
             if (p) prompt = p;
           });
 
-          payload = {
-            model: node.params["model"] || "veo3.1_fast",
-            promptText: prompt,
-            duration: Number(node.params["duration"]) || 5,
-            ratio: node.params["aspectRatio"] || "16:9",
-          };
-          if (imageUris.length > 0) payload.promptImage = imageUris[0];
-          if (imageUris.length > 1) payload.lastFrameImage = imageUris[1];
-        } else if (nodeTypeName === "TEXT_TO_SPEECH") {
+          const modelName = node.params["model"] || "veo3.1_fast";
+
+          if (imageUris.length > 0) {
+            endpoint = "/image_to_video";
+            const promptImages: Array<{ uri: string; position: string }> = [
+              { uri: imageUris[0], position: "first" },
+            ];
+            if (imageUris.length > 1) {
+              promptImages.push({ uri: imageUris[1], position: "last" });
+            }
+            payload = {
+              model: modelName,
+              promptImage: promptImages,
+              ratio: getRatio(node.params["aspectRatio"], true),
+              duration: Number(node.params["duration"]) || 5,
+            };
+            if (prompt) payload.promptText = prompt;
+          } else {
+            endpoint = "/text_to_video";
+            payload = {
+              model: modelName,
+              promptText: prompt || "Cinematic video motion",
+              ratio: getRatio(node.params["aspectRatio"], true),
+              duration: Number(node.params["duration"]) || 5,
+            };
+          }
+        } else if (nodeTypeName === "TEXT_TO_SPEECH" || nodeTypeName === "AUDIO_GENERATION") {
           endpoint = "/text_to_speech";
           let text = node.params["text"] || "";
           workflow.edges.filter((e) => e.targetNodeId === node.id && e.targetPortId === "prompt").forEach((e) => {
@@ -244,13 +276,18 @@ Deno.serve(async (req: Request) => {
             if (t) text = t;
           });
           payload = {
-            text,
+            model: "eleven_multilingual_v2",
+            promptText: text || "Hello, this is a test speech generation.",
             voicePreset: node.params["voicePreset"] || "Maya",
           };
         } else {
-          // Default generic request builder for custom nodes
-          endpoint = "/image_to_video";
-          payload = { ...node.params };
+          // Fallback for custom or recipe endpoints
+          endpoint = "/text_to_image";
+          payload = {
+            model: node.params["model"] || "gemini_image3_pro",
+            promptText: node.params["prompt"] || "A high quality generated result",
+            ratio: "1344:768",
+          };
         }
 
         // Call Runway API
