@@ -449,19 +449,26 @@ class WorkflowController {
         }
 
         if (count >= 3) {
-            println("""
-            [OneSignal-IAM] 🎯 Target Condition Satisfied (count >= 3)!
-            [OneSignal-IAM] Setting Trigger: 'three_workflows_created' = 'true'
-            [OneSignal-IAM] Setting Trigger: 'created_3_workflows' = 'true'
-            [OneSignal-IAM] Setting Tag: 'has_created_3_workflows' = 'true'
-            [OneSignal-IAM] ══════════════════════════════════════════════════
-            """.trimIndent())
             app.ak25.pocketflow.platform.OneSignalBridgeHolder.addTrigger("three_workflows_created", "true")
             app.ak25.pocketflow.platform.OneSignalBridgeHolder.addTrigger("created_3_workflows", "true")
             app.ak25.pocketflow.platform.OneSignalBridgeHolder.addTag("has_created_3_workflows", "true")
+        }
+
+        if (count >= 7) {
+            println("""
+            [OneSignal-IAM] 🎯 Target Condition Satisfied (count >= 7)!
+            [OneSignal-IAM] Setting Trigger: 'seven_workflows_created' = 'true'
+            [OneSignal-IAM] Setting Trigger: 'created_7_workflows' = 'true'
+            [OneSignal-IAM] Setting Tag: 'has_created_7_workflows' = 'true'
+            [OneSignal-IAM] ══════════════════════════════════════════════════
+            """.trimIndent())
+            app.ak25.pocketflow.platform.OneSignalBridgeHolder.addTrigger("seven_workflows_created", "true")
+            app.ak25.pocketflow.platform.OneSignalBridgeHolder.addTrigger("created_7_workflows", "true")
+            app.ak25.pocketflow.platform.OneSignalBridgeHolder.addTrigger("seven_workflows", "true")
+            app.ak25.pocketflow.platform.OneSignalBridgeHolder.addTag("has_created_7_workflows", "true")
         } else {
             println("""
-            [OneSignal-IAM] ℹ️ Waiting for 3 workflows (currently at $count/3).
+            [OneSignal-IAM] ℹ️ Waiting for 7 workflows (currently at $count/7).
             [OneSignal-IAM] ══════════════════════════════════════════════════
             """.trimIndent())
         }
