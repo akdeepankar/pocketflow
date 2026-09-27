@@ -400,13 +400,21 @@ class WorkflowController {
             workflowName = name
         )
         // Fire explicit triggers for newly created workflow
-        println("[OneSignal-IAM] 🎯 Firing 'workflow_created' and 'new_workflow_created' triggers")
-        app.ak25.pocketflow.platform.OneSignalBridgeHolder.addTrigger("workflow_created", "true")
-        app.ak25.pocketflow.platform.OneSignalBridgeHolder.addTrigger("new_workflow_created", "true")
-        app.ak25.pocketflow.platform.OneSignalBridgeHolder.addTrigger("action", "workflow_created")
-        app.ak25.pocketflow.platform.OneSignalBridgeHolder.addTag("last_action", "workflow_created")
+        scope.launch(Dispatchers.Main) {
+            // Short delay to allow screen transition to complete before popup display
+            delay(400)
+            println("[OneSignal-IAM] 🎯 Firing 'workflow_created', 'new_workflow_created', and 'action' triggers")
+            app.ak25.pocketflow.platform.OneSignalBridgeHolder.removeTrigger("workflow_created")
+            app.ak25.pocketflow.platform.OneSignalBridgeHolder.removeTrigger("new_workflow_created")
+            app.ak25.pocketflow.platform.OneSignalBridgeHolder.removeTrigger("action")
+            
+            app.ak25.pocketflow.platform.OneSignalBridgeHolder.addTrigger("workflow_created", "true")
+            app.ak25.pocketflow.platform.OneSignalBridgeHolder.addTrigger("new_workflow_created", "true")
+            app.ak25.pocketflow.platform.OneSignalBridgeHolder.addTrigger("action", "workflow_created")
+            app.ak25.pocketflow.platform.OneSignalBridgeHolder.addTag("last_action", "workflow_created")
 
-        updateWorkflowCountTriggers(updated.size)
+            updateWorkflowCountTriggers(updated.size)
+        }
     }
 
     private fun updateWorkflowCountTriggers(count: Int) {
@@ -425,6 +433,7 @@ class WorkflowController {
 
         if (count == 1) {
             println("[OneSignal-IAM] 🌟 First workflow milestone reached (count=1)!")
+            app.ak25.pocketflow.platform.OneSignalBridgeHolder.removeTrigger("first_workflow_created")
             app.ak25.pocketflow.platform.OneSignalBridgeHolder.addTrigger("first_workflow_created", "true")
             app.ak25.pocketflow.platform.OneSignalBridgeHolder.addTag("has_created_first_workflow", "true")
         }

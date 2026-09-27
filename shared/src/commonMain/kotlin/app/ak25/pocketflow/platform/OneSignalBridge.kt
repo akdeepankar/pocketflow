@@ -2,6 +2,7 @@ package app.ak25.pocketflow.platform
 
 interface OneSignalBridge {
     fun addTrigger(key: String, value: String)
+    fun removeTrigger(key: String)
     fun addTag(key: String, value: String)
 }
 
@@ -31,6 +32,12 @@ object OneSignalBridgeHolder {
         } else {
             println("[OneSignal-Bridge] ⏳ Bridge not ready yet, cached trigger '$key' = '$value'")
         }
+    }
+
+    fun removeTrigger(key: String) {
+        pendingTriggers.remove(key)
+        val bridge = current
+        bridge?.removeTrigger(key)
     }
 
     fun addTag(key: String, value: String) {

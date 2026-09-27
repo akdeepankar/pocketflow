@@ -233,6 +233,11 @@ extension OneSignalManager: OneSignalBridge {
         print("[OneSignal-iOS] 🎯 Added InApp trigger: '\(key)' = '\(value)'")
     }
     
+    func removeTrigger(key: String) {
+        OneSignal.InAppMessages.removeTrigger(key)
+        print("[OneSignal-iOS] 🗑️ Removed InApp trigger: '\(key)'")
+    }
+    
     func addTag(key: String, value: String) {
         OneSignal.User.addTag(key: key, value: value)
         print("[OneSignal-iOS] 🏷️ Added User tag: '\(key)' = '\(value)'")

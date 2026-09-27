@@ -122,6 +122,10 @@ class MainActivity : ComponentActivity() {
                 OneSignal.InAppMessages.addTrigger(key, value)
                 println("[OneSignal-Android] 🎯 Added InApp trigger: '$key' = '$value'")
             }
+            override fun removeTrigger(key: String) {
+                OneSignal.InAppMessages.removeTrigger(key)
+                println("[OneSignal-Android] 🗑️ Removed InApp trigger: '$key'")
+            }
             override fun addTag(key: String, value: String) {
                 OneSignal.User.addTag(key, value)
                 println("[OneSignal-Android] 🏷️ Added User tag: '$key' = '$value'")
