@@ -2,6 +2,7 @@ import Foundation
 import UIKit
 import UserNotifications
 import OneSignalFramework
+import OneSignalInAppMessages
 import Shared
 
 @objc final class OneSignalManager: NSObject, OSPushSubscriptionObserver, OSNotificationLifecycleListener, OSNotificationClickListener, OSInAppMessageLifecycleListener, OSInAppMessageClickListener {
@@ -18,6 +19,7 @@ import Shared
         
         // Initialize OneSignal
         OneSignal.initialize(appId, withLaunchOptions: launchOptions)
+        print("[OneSignal-iOS] 📦 InAppMessages runtime class: \(String(describing: OneSignal.InAppMessages))")
         
         // Ensure push subscription is opted in
         OneSignal.User.pushSubscription.optIn()
