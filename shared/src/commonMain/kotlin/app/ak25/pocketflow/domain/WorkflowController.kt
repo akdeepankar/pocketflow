@@ -399,6 +399,13 @@ class WorkflowController {
             details = "Created workflow named '$name'",
             workflowName = name
         )
+        // Fire explicit triggers for newly created workflow
+        println("[OneSignal-IAM] 🎯 Firing 'workflow_created' and 'new_workflow_created' triggers")
+        app.ak25.pocketflow.platform.OneSignalBridgeHolder.addTrigger("workflow_created", "true")
+        app.ak25.pocketflow.platform.OneSignalBridgeHolder.addTrigger("new_workflow_created", "true")
+        app.ak25.pocketflow.platform.OneSignalBridgeHolder.addTrigger("action", "workflow_created")
+        app.ak25.pocketflow.platform.OneSignalBridgeHolder.addTag("last_action", "workflow_created")
+
         updateWorkflowCountTriggers(updated.size)
     }
 
@@ -415,6 +422,12 @@ class WorkflowController {
         app.ak25.pocketflow.platform.OneSignalBridgeHolder.addTrigger("workflows_created", countStr)
         app.ak25.pocketflow.platform.OneSignalBridgeHolder.addTag("workflow_count", countStr)
         app.ak25.pocketflow.platform.OneSignalBridgeHolder.addTag("workflows_created", countStr)
+
+        if (count == 1) {
+            println("[OneSignal-IAM] 🌟 First workflow milestone reached (count=1)!")
+            app.ak25.pocketflow.platform.OneSignalBridgeHolder.addTrigger("first_workflow_created", "true")
+            app.ak25.pocketflow.platform.OneSignalBridgeHolder.addTag("has_created_first_workflow", "true")
+        }
 
         if (count >= 3) {
             println("""
