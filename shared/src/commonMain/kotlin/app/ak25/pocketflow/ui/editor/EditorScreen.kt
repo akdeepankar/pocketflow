@@ -1118,36 +1118,79 @@ fun EditorScreen(
             }
         }
 
-        // Incoming node-note notification — shows below the header when a
-        // collaborator posts a new note on a node in this workflow.
+        // Incoming node-note notification cloud — floating card below header with rich mention badges
         incomingNote?.let { note ->
-            val senderFirstName = note.authorName.ifEmpty { "Member" }.trim().split(" ").first()
-            Row(
+            val targetNode = workflow?.nodes?.find { it.notes.any { n -> n.id == note.id } }
+            Surface(
+                shape = RoundedCornerShape(16.dp),
+                color = Color.White,
+                shadowElevation = 8.dp,
+                border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
                 modifier = Modifier
                     .align(Alignment.TopCenter)
                     .windowInsetsPadding(WindowInsets.statusBars)
-                    .padding(top = 80.dp, start = 16.dp, end = 16.dp)
-                    .shadow(6.dp, RoundedCornerShape(14.dp))
-                    .background(Color(0xFF0A84FF), RoundedCornerShape(14.dp))
-                    .clickable { controller.consumeIncomingNote() }
-                    .padding(horizontal = 14.dp, vertical = 10.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    .padding(top = 76.dp, start = 16.dp, end = 16.dp)
+                    .widthIn(max = 380.dp)
+                    .clickable {
+                        if (targetNode != null) {
+                            notesNodeId = targetNode.id
+                        }
+                        controller.consumeIncomingNote()
+                    }
             ) {
-                Icon(
-                    imageVector = AppIcons.Message,
-                    contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(15.dp)
-                )
-                Text(
-                    text = "$senderFirstName: ${note.text}",
-                    color = Color.White,
-                    fontSize = 13.sp,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f)
-                )
+                Row(
+                    modifier = Modifier.padding(12.dp),
+                    verticalAlignment = Alignment.Top,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    app.ak25.pocketflow.ui.home.MemberAvatar(
+                        member = app.ak25.pocketflow.services.WorkflowMember(userId = note.authorUserId, userName = note.authorName),
+                        isOnline = true,
+                        isMe = false,
+                        modifier = Modifier.size(34.dp)
+                    )
+                    Column(modifier = Modifier.weight(1f)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                Text(
+                                    text = note.authorName.ifEmpty { "Team Member" },
+                                    fontSize = 12.5.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF0F172A)
+                                )
+                                Text(
+                                    text = "• on ${targetNode?.type?.nodeName?.replace(" Generation", "") ?: "Node"}",
+                                    fontSize = 11.sp,
+                                    color = Color(0xFF64748B)
+                                )
+                            }
+                            Text(
+                                text = "✕",
+                                color = Color(0xFF94A3B8),
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier
+                                    .clip(CircleShape)
+                                    .clickable { controller.consumeIncomingNote() }
+                                    .padding(4.dp)
+                            )
+                        }
+                        Spacer(Modifier.height(3.dp))
+                        MentionMessageContent(
+                            text = note.text,
+                            isMine = false,
+                            textColor = Color(0xFF334155),
+                            fontSize = 13.sp
+                        )
+                    }
+                }
             }
         }
 
