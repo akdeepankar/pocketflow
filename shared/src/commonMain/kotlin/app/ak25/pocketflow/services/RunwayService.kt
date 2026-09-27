@@ -78,6 +78,19 @@ class RunwayService {
      *   1. Try via Supabase Edge Function `runway-generate` (API key stays server-side).
      *   2. If that fails (JWT absent, function not deployed), fall back to direct call.
      */
+    private suspend fun triggerLiveActivityPolling(jobId: String) {
+        val meta = activeLiveActivityMetadata ?: return
+        try {
+            SupabaseRepository.pollLiveActivityJob(
+                jobId = jobId,
+                provider = "runway",
+                liveActivity = meta
+            )
+        } catch (e: Exception) {
+            println("[RunwayService] Failed to trigger Live Activity poll-job: ${e.message}")
+        }
+    }
+
     private suspend fun runwayFetch(endpoint: String, body: JsonObject): JsonObject {
         // ── Path 1: via Supabase Function ──────────────────────────────────────
         val jwt = app.ak25.pocketflow.storage.LocalStorage.loadString("supabase_jwt")
@@ -86,11 +99,11 @@ class RunwayService {
             try {
                 val jobId = SupabaseRepository.invokeRunwayFunction(
                     endpoint = endpoint,
-                    payload = body,
-                    liveActivity = activeLiveActivityMetadata
+                    payload = body
                 )
                 if (jobId != null) {
                     onTaskIdGenerated?.invoke(jobId)
+                    triggerLiveActivityPolling(jobId)
                     // Return a minimal JsonObject matching what callers expect
                     return kotlinx.serialization.json.buildJsonObject {
                         put("id", JsonPrimitive(jobId))
@@ -122,6 +135,7 @@ class RunwayService {
             val json = response.body<JsonObject>()
             json["id"]?.jsonPrimitive?.content?.let { id ->
                 onTaskIdGenerated?.invoke(id)
+                triggerLiveActivityPolling(id)
             }
             return json
         } catch (e: Exception) {
