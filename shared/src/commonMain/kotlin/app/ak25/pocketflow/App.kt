@@ -88,6 +88,7 @@ fun App() {
     }
     
     var currentScreen by remember { mutableStateOf(Screen.HOME) }
+    var previousScreen by remember { mutableStateOf(Screen.HOME) }
     val pagerState = rememberPagerState(initialPage = 0, pageCount = { 3 })
     var isPaywallOpen by remember { mutableStateOf(false) }
 
@@ -131,6 +132,9 @@ fun App() {
         val target = pendingDeepLink ?: return@LaunchedEffect
         println("[App] 🚀 Routing Deep Link: workflowId=${target.workflowId}, nodeId=${target.nodeId}, type=${target.type}, openPaywall=${target.openPaywall}")
         if (target.openPaywall) {
+            if (currentScreen != Screen.PAYWALL) {
+                previousScreen = currentScreen
+            }
             currentScreen = Screen.PAYWALL
             app.ak25.pocketflow.domain.DeepLinkRouter.clearPendingDeepLink()
             return@LaunchedEffect
@@ -200,7 +204,10 @@ fun App() {
                             backgroundScope = appScope,
                             onNavigateToEditor = { currentScreen = Screen.EDITOR },
                             onNavigateToSettings = { currentScreen = Screen.SETTINGS },
-                            onNavigateToPaywall = { currentScreen = Screen.PAYWALL },
+                            onNavigateToPaywall = {
+                                previousScreen = currentScreen
+                                currentScreen = Screen.PAYWALL
+                            },
                             onPaywallStateChanged = { isPaywallOpen = it },
                             onSignOut = {
                                 controller.clearLocalWorkflows()
@@ -218,7 +225,10 @@ fun App() {
                         )
                         2 -> SettingsScreen(
                             onBack = { currentScreen = Screen.HOME },
-                            onNavigateToPaywall = { currentScreen = Screen.PAYWALL },
+                            onNavigateToPaywall = {
+                                previousScreen = currentScreen
+                                currentScreen = Screen.PAYWALL
+                            },
                             onNavigateToRates = { currentScreen = Screen.RATES },
                             onNavigateToActivity = { currentScreen = Screen.ACTIVITY },
                             onShowOnboarding = { showOnboarding = true }
@@ -363,7 +373,7 @@ fun App() {
                 }
                 Screen.PAYWALL -> {
                     PaywallScreen(
-                        onDismiss = { currentScreen = Screen.HOME }
+                        onDismiss = { currentScreen = previousScreen }
                     )
                 }
                 Screen.RATES -> {
