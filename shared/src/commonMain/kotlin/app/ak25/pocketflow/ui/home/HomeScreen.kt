@@ -106,6 +106,8 @@ fun HomeScreen(
     val isGuest = authViewModel.isGuest
     var showUserMenu by remember { mutableStateOf(false) }
 
+    var isRefreshingWorkflows by remember { mutableStateOf(false) }
+
     LaunchedEffect(showPaywall) {
         onPaywallStateChanged(showPaywall)
     }
@@ -118,6 +120,7 @@ fun HomeScreen(
     var workflowForShare by remember { mutableStateOf<Workflow?>(null) }
     var showJoinSheet by remember { mutableStateOf(false) }
     var showGuestJoinSheet by remember { mutableStateOf(false) }
+
     // derive the label at function level so bottom sheets can access it
     val availableCreditsLabel = PocketFlowPurchases.getAvailableCreditsLabel(virtualCurrencies)
 
@@ -218,6 +221,43 @@ fun HomeScreen(
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.SemiBold,
                                 color = Color(0xFF0EA5E9)
+                            )
+                        }
+                    }
+
+                    // Refresh Button — syncs workflows and credits with cloud
+                    Box(
+                        modifier = Modifier
+                            .size(34.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(Color(0xFF0EA5E9).copy(alpha = 0.1f))
+                            .clickable(enabled = !isRefreshingWorkflows) {
+                                backgroundScope.launch {
+                                    isRefreshingWorkflows = true
+                                    try {
+                                        authViewModel.refreshAccountInfo()
+                                        PocketFlowPurchases.refreshVirtualCurrencies(forceRefresh = true)
+                                        controller.syncWithCloud()
+                                        delay(800)
+                                    } finally {
+                                        isRefreshingWorkflows = false
+                                    }
+                                }
+                            },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (isRefreshingWorkflows) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(16.dp),
+                                color = Color(0xFF0EA5E9),
+                                strokeWidth = 2.dp
+                            )
+                        } else {
+                            Icon(
+                                imageVector = AppIcons.Refresh,
+                                contentDescription = "Refresh Workflows",
+                                tint = Color(0xFF0EA5E9),
+                                modifier = Modifier.size(18.dp)
                             )
                         }
                     }
