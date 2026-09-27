@@ -364,6 +364,32 @@ object SupabaseRepository {
         }
     }
 
+    suspend fun pollLiveActivityJob(
+        jobId: String,
+        provider: String = "runway",
+        liveActivity: JsonObject? = null,
+        recipientUserId: String? = null
+    ): Boolean = withContext(Dispatchers.IO) {
+        try {
+            val body = buildJsonObject {
+                put("jobId", jobId)
+                put("provider", provider)
+                if (liveActivity != null) {
+                    put("liveActivity", liveActivity)
+                }
+                val uid = recipientUserId ?: userId()
+                if (uid.isNotBlank()) {
+                    put("recipientUserId", uid)
+                }
+            }
+            val response = supabaseClient.functions.invoke("poll-job", body.toString())
+            response.status.value in 200..299
+        } catch (e: Exception) {
+            println("[Supabase] pollLiveActivityJob exception: ${e.message}")
+            false
+        }
+    }
+
     suspend fun uploadImageFile(nodeId: String, bytes: ByteArray): String? = withContext(Dispatchers.IO) {
         try {
             val fileId = "img_${nodeId.replace("-", "_")}.jpg"
