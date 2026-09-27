@@ -51,10 +51,52 @@ fun NodeNotesBottomSheet(
     val (nodeColor, nodeIcon) = getNodeTheme(node?.type ?: NodeType.TEXT_PROMPT)
     val notes = node?.notes?.toList().orEmpty().sortedBy { it.createdAt }
 
+    var noteToDelete by remember { mutableStateOf<NodeNote?>(null) }
+
     LaunchedEffect(notes.size) {
         if (notes.isNotEmpty()) {
             listState.animateScrollToItem(notes.size - 1)
         }
+    }
+
+    if (noteToDelete != null) {
+        AlertDialog(
+            onDismissRequest = { noteToDelete = null },
+            title = {
+                Text(
+                    "Delete Note",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 17.sp
+                )
+            },
+            text = {
+                Text(
+                    "Are you sure you want to delete this note? This action cannot be undone.",
+                    fontSize = 14.sp,
+                    color = Color(0xFF475569)
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        val toDelete = noteToDelete
+                        if (toDelete != null) {
+                            controller.removeNodeNote(nodeId, toDelete.id)
+                        }
+                        noteToDelete = null
+                    }
+                ) {
+                    Text("Delete", color = Color(0xFFEF4444), fontWeight = FontWeight.SemiBold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { noteToDelete = null }) {
+                    Text("Cancel", color = Color(0xFF64748B))
+                }
+            },
+            containerColor = Color.White,
+            shape = RoundedCornerShape(16.dp)
+        )
     }
 
     ModalBottomSheet(
@@ -199,7 +241,7 @@ fun NodeNotesBottomSheet(
                         ChatBubbleRow(
                             note = note,
                             isMine = note.authorUserId.isNotEmpty() && note.authorUserId == myUserId,
-                            onDelete = { controller.removeNodeNote(nodeId, note.id) }
+                            onDelete = { noteToDelete = note }
                         )
                     }
                 }
