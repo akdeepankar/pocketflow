@@ -86,48 +86,87 @@ object PocketFlowPurchases {
 
     fun saveMockCreditsBalance(balance: Int) {
         app.ak25.pocketflow.storage.LocalStorage.saveString("mock_credits_balance", balance.toString())
-        evaluateCreditBalanceTriggers(balance)
+        syncCreditBalanceTags(balance)
     }
 
-    fun evaluateCreditBalanceTriggers(balance: Int?) {
+    /**
+     * Synchronizes personalization tags (e.g. {{ credits | default: '0' }}) without firing IAM triggers.
+     */
+    fun syncCreditBalanceTags(balance: Int?) {
         if (balance == null) return
         val balanceStr = balance.toString()
-        // Message personalization tags & triggers for OneSignal Liquid syntax:
-        // e.g. {{ user.tags.credits | default: '0' }}, {{ user.tags.credits_count }}, {{ user.tags.credits_balance }}
-        app.ak25.pocketflow.platform.OneSignalBridgeHolder.addTrigger("credits", balanceStr)
+        // Message personalization tags for OneSignal Liquid syntax:
+        // e.g. {{ credits | default: '0' }}, {{ credits_count }}, {{ credits_balance }}
         app.ak25.pocketflow.platform.OneSignalBridgeHolder.addTag("credits", balanceStr)
-        app.ak25.pocketflow.platform.OneSignalBridgeHolder.addTrigger("credits_count", balanceStr)
         app.ak25.pocketflow.platform.OneSignalBridgeHolder.addTag("credits_count", balanceStr)
-        app.ak25.pocketflow.platform.OneSignalBridgeHolder.addTrigger("credit_count", balanceStr)
         app.ak25.pocketflow.platform.OneSignalBridgeHolder.addTag("credit_count", balanceStr)
-        app.ak25.pocketflow.platform.OneSignalBridgeHolder.addTrigger("credits_balance", balanceStr)
         app.ak25.pocketflow.platform.OneSignalBridgeHolder.addTag("credits_balance", balanceStr)
-        app.ak25.pocketflow.platform.OneSignalBridgeHolder.addTrigger("credit_balance", balanceStr)
         app.ak25.pocketflow.platform.OneSignalBridgeHolder.addTag("credit_balance", balanceStr)
-        app.ak25.pocketflow.platform.OneSignalBridgeHolder.addTrigger("available_credits", balanceStr)
         app.ak25.pocketflow.platform.OneSignalBridgeHolder.addTag("available_credits", balanceStr)
+
+        if (balance >= 50) {
+            app.ak25.pocketflow.platform.OneSignalBridgeHolder.removeTrigger("credits_less_than_50")
+            app.ak25.pocketflow.platform.OneSignalBridgeHolder.removeTrigger("low_credits")
+            app.ak25.pocketflow.platform.OneSignalBridgeHolder.removeTrigger("credits_low")
+            app.ak25.pocketflow.platform.OneSignalBridgeHolder.removeTrigger("action")
+            app.ak25.pocketflow.platform.OneSignalBridgeHolder.addTag("has_low_credits", "false")
+        }
+    }
+
+    /**
+     * Evaluates credit balance specifically after a node run completes and credits are deducted.
+     * Only triggers the In-App Message if balance is strictly less than 50.
+     */
+    fun evaluateCreditBalanceAfterNodeRun(balance: Int?) {
+        if (balance == null) return
+        val balanceStr = balance.toString()
+        syncCreditBalanceTags(balance)
 
         if (balance < 50) {
             println("""
             [OneSignal-IAM] ══════════════════════════════════════════════════
-            [OneSignal-IAM] ⚠️ Low Credits Trigger Satisfied (balance = $balance < 50)!
+            [OneSignal-IAM] ⚠️ Node Completed -> Low Credits Trigger Satisfied (balance = $balance < 50)!
             [OneSignal-IAM] Setting Trigger: 'credits_less_than_50' = 'true'
             [OneSignal-IAM] Setting Trigger: 'low_credits' = 'true'
             [OneSignal-IAM] Setting Trigger: 'credits_low' = 'true'
             [OneSignal-IAM] Setting Trigger: 'action' = 'low_credits'
+            [OneSignal-IAM] Setting Trigger: 'node_completed' = 'true'
             [OneSignal-IAM] Setting Tag: 'has_low_credits' = 'true'
             [OneSignal-IAM] Setting Personalization Tag: 'credits' = '$balanceStr'
             [OneSignal-IAM] ══════════════════════════════════════════════════
             """.trimIndent())
-            app.ak25.pocketflow.platform.OneSignalBridgeHolder.addTrigger("credits_less_than_50", "true")
-            app.ak25.pocketflow.platform.OneSignalBridgeHolder.addTrigger("low_credits", "true")
-            app.ak25.pocketflow.platform.OneSignalBridgeHolder.addTrigger("credits_low", "true")
-            app.ak25.pocketflow.platform.OneSignalBridgeHolder.addTrigger("action", "low_credits")
-            app.ak25.pocketflow.platform.OneSignalBridgeHolder.addTag("has_low_credits", "true")
+
+            scope.launch {
+                val triggerMap = mapOf(
+                    "credits_less_than_50" to "true",
+                    "low_credits" to "true",
+                    "credits_low" to "true",
+                    "action" to "low_credits",
+                    "node_completed" to "true"
+                )
+
+                // Pulse 1: Immediate
+                triggerMap.forEach { (k, v) ->
+                    app.ak25.pocketflow.platform.OneSignalBridgeHolder.addTrigger(k, v)
+                }
+
+                // Pulse 2: 600ms (ensures UI rendering has completed)
+                delay(600)
+                triggerMap.forEach { (k, v) ->
+                    app.ak25.pocketflow.platform.OneSignalBridgeHolder.addTrigger(k, v)
+                }
+
+                // Pulse 3: 1500ms
+                delay(900)
+                triggerMap.forEach { (k, v) ->
+                    app.ak25.pocketflow.platform.OneSignalBridgeHolder.addTrigger(k, v)
+                }
+            }
         } else {
             app.ak25.pocketflow.platform.OneSignalBridgeHolder.removeTrigger("credits_less_than_50")
             app.ak25.pocketflow.platform.OneSignalBridgeHolder.removeTrigger("low_credits")
             app.ak25.pocketflow.platform.OneSignalBridgeHolder.removeTrigger("credits_low")
+            app.ak25.pocketflow.platform.OneSignalBridgeHolder.removeTrigger("action")
             app.ak25.pocketflow.platform.OneSignalBridgeHolder.addTag("has_low_credits", "false")
         }
     }
@@ -172,8 +211,8 @@ object PocketFlowPurchases {
             setMockModeEnabled(true)
         }
         
-        // Evaluate initial credits trigger
-        evaluateCreditBalanceTriggers(getAvailableCreditsBalance())
+        // Sync initial credits personalization tags without firing IAM trigger
+        syncCreditBalanceTags(getAvailableCreditsBalance())
     }
 
     private fun ensureConfigured() {
@@ -324,7 +363,7 @@ object PocketFlowPurchases {
                 },
                 onSuccess = { currencies: VirtualCurrencies ->
                     _virtualCurrencies.value = currencies
-                    evaluateCreditBalanceTriggers(getAvailableCreditsBalance(currencies))
+                    syncCreditBalanceTags(getAvailableCreditsBalance(currencies))
                     continuation.resume(currencies)
                 }
             )
@@ -626,6 +665,7 @@ object PocketFlowPurchases {
             saveMockCreditsBalance(newBalance)
             // Trigger flow update
             _virtualCurrencies.value = null
+            evaluateCreditBalanceAfterNodeRun(newBalance)
             return true
         }
         val customerId = Purchases.sharedInstance.appUserID

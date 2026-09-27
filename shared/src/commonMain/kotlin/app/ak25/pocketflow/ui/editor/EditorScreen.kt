@@ -204,10 +204,11 @@ fun EditorScreen(
                         val success = engine.runNode(node.id)
                         if (success) {
                             val deductSuccess = PocketFlowPurchases.deductCredits(expectedDeduction)
-                            PocketFlowPurchases.refreshVirtualCurrenciesAfterRun(
+                            val remainingBalance = PocketFlowPurchases.refreshVirtualCurrenciesAfterRun(
                                 previousBalance = previousBalance,
                                 expectedDeduction = expectedDeduction
-                            )
+                            ) ?: PocketFlowPurchases.getAvailableCreditsBalance()
+                            PocketFlowPurchases.evaluateCreditBalanceAfterNodeRun(remainingBalance)
                         }
                     }
                 }
@@ -296,11 +297,12 @@ fun EditorScreen(
                     )
                 }
 
-                // Refresh virtual currencies
-                PocketFlowPurchases.refreshVirtualCurrenciesAfterRun(
+                // Refresh virtual currencies and evaluate low credits trigger
+                val remainingBalance = PocketFlowPurchases.refreshVirtualCurrenciesAfterRun(
                     previousBalance = previousBalance,
                     expectedDeduction = expectedDeduction
-                )
+                ) ?: PocketFlowPurchases.getAvailableCreditsBalance()
+                PocketFlowPurchases.evaluateCreditBalanceAfterNodeRun(remainingBalance)
             }
             if (!success) {
                 val currentWf = controller.currentWorkflow.value

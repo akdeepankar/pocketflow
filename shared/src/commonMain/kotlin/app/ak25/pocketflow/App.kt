@@ -72,10 +72,11 @@ fun App() {
                                     val success = engine.runNode(node.id)
                                     if (success) {
                                         val deductSuccess = app.ak25.pocketflow.services.PocketFlowPurchases.deductCredits(expectedDeduction)
-                                        app.ak25.pocketflow.services.PocketFlowPurchases.refreshVirtualCurrenciesAfterRun(
+                                        val remainingBalance = app.ak25.pocketflow.services.PocketFlowPurchases.refreshVirtualCurrenciesAfterRun(
                                             previousBalance = previousBalance,
                                             expectedDeduction = expectedDeduction
-                                        )
+                                        ) ?: app.ak25.pocketflow.services.PocketFlowPurchases.getAvailableCreditsBalance()
+                                        app.ak25.pocketflow.services.PocketFlowPurchases.evaluateCreditBalanceAfterNodeRun(remainingBalance)
                                     }
                                 }
                             }
