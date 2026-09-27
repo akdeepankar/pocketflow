@@ -228,24 +228,6 @@ fun NodeUI(
                         maxLines = 1,
                         overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                     )
-                    val assigneeName = node.params["assignee_name"]
-                    if (!assigneeName.isNullOrBlank()) {
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Surface(
-                            shape = RoundedCornerShape(6.dp),
-                            color = nodeColor.copy(alpha = 0.15f),
-                        ) {
-                            Text(
-                                text = "👤 $assigneeName",
-                                fontSize = 9.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                color = nodeColor,
-                                maxLines = 1,
-                                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
-                            )
-                        }
-                    }
                 }
                 
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -646,6 +628,30 @@ fun NodeUI(
                                 onDragStarted = { onPortDragStarted("${node.id}_${port.id}") },
                                 onDrag = onPortDrag,
                                 onDragEnded = { onPortDragEnded("${node.id}_${port.id}") }
+                            )
+                        }
+                    }
+                }
+
+                val assigneeName = node.params["assignee_name"]
+                if (!assigneeName.isNullOrBlank()) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Surface(
+                        shape = RoundedCornerShape(6.dp),
+                        color = nodeColor.copy(alpha = 0.12f),
+                        modifier = Modifier.align(Alignment.Start)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
+                        ) {
+                            Text(
+                                text = "👤 $assigneeName",
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = nodeColor,
+                                maxLines = 1,
+                                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                             )
                         }
                     }
