@@ -193,19 +193,19 @@ import Shared
     }
 
     // OSInAppMessageLifecycleListener protocol methods
-    func onWillDisplayInAppMessage(event: OSInAppMessageWillDisplayEvent) {
+    func onWillDisplay(event: OSInAppMessageWillDisplayEvent) {
         print("[OneSignal-IAM-iOS] 💬 In-App Message WILL display: messageId=\(event.message.messageId)")
     }
     
-    func onDidDisplayInAppMessage(event: OSInAppMessageDidDisplayEvent) {
+    func onDidDisplay(event: OSInAppMessageDidDisplayEvent) {
         print("[OneSignal-IAM-iOS] 📺 In-App Message DID display: messageId=\(event.message.messageId)")
     }
     
-    func onWillDismissInAppMessage(event: OSInAppMessageWillDismissEvent) {
+    func onWillDismiss(event: OSInAppMessageWillDismissEvent) {
         print("[OneSignal-IAM-iOS] 🚪 In-App Message WILL dismiss: messageId=\(event.message.messageId)")
     }
     
-    func onDidDismissInAppMessage(event: OSInAppMessageDidDismissEvent) {
+    func onDidDismiss(event: OSInAppMessageDidDismissEvent) {
         print("[OneSignal-IAM-iOS] ✅ In-App Message DID dismiss: messageId=\(event.message.messageId)")
     }
     
@@ -226,6 +226,7 @@ extension OneSignalManager: OneSignalBridge {
         DispatchQueue.main.async {
             OneSignal.InAppMessages.paused = false
             OneSignal.InAppMessages.addTrigger(key, withValue: value)
+            OneSignal.InAppMessages.addTriggers([key: value])
             print("[OneSignal-iOS] 🎯 Added InApp trigger: '\(key)' = '\(value)'")
         }
     }
