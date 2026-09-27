@@ -8,6 +8,8 @@ struct PocketFlowLiveActivityWidget: Widget {
         ActivityConfiguration(for: PocketFlowActivityAttributes.self) { context in
             // Lock screen & Notification banner UI
             LockScreenLiveActivityView(context: context)
+                .activityBackgroundTint(Color.black)
+                .activitySystemActionForegroundColor(Color.white)
         } dynamicIsland: { context in
             DynamicIsland {
                 // Expanded UI
@@ -160,10 +162,10 @@ struct StepProgressTickView: View {
                                 .foregroundColor(.white)
                         } else {
                             Circle()
-                                .fill(Color.gray.opacity(0.2))
+                                .fill(Color.white.opacity(0.12))
                                 .frame(width: compact ? 18 : 24, height: compact ? 18 : 24)
                             Circle()
-                                .stroke(Color.gray.opacity(0.45), lineWidth: 1.2)
+                                .stroke(Color.white.opacity(0.3), lineWidth: 1.2)
                                 .frame(width: compact ? 18 : 24, height: compact ? 18 : 24)
                             Text("\(index + 1)")
                                 .font(.system(size: compact ? 9 : 10, weight: .semibold))
@@ -173,7 +175,7 @@ struct StepProgressTickView: View {
 
                     if index < count - 1 {
                         Rectangle()
-                            .fill(index < completedSteps ? Color.green : Color.gray.opacity(0.3))
+                            .fill(index < completedSteps ? Color.green : Color.white.opacity(0.2))
                             .frame(height: compact ? 2 : 2.5)
                             .frame(maxWidth: .infinity)
                     }
@@ -193,7 +195,7 @@ struct LockScreenLiveActivityView: View {
             HStack(spacing: 10) {
                 ZStack {
                     RoundedRectangle(cornerRadius: 10)
-                        .fill(accentColorForNodeType(context.state.currentNodeType).opacity(0.18))
+                        .fill(accentColorForNodeType(context.state.currentNodeType).opacity(0.22))
                         .frame(width: 38, height: 38)
                     Image(systemName: iconForNodeType(context.state.currentNodeType))
                         .font(.system(size: 17, weight: .bold))
@@ -203,11 +205,11 @@ struct LockScreenLiveActivityView: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(context.state.workflowName)
                         .font(.system(size: 15, weight: .bold))
-                        .foregroundColor(.primary)
+                        .foregroundColor(.white)
                         .lineLimit(1)
                     Text(context.state.nodeTitle)
                         .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(.secondary)
+                        .foregroundColor(.white.opacity(0.7))
                         .lineLimit(1)
                 }
 
@@ -224,7 +226,7 @@ struct LockScreenLiveActivityView: View {
                     .foregroundColor(context.state.isSuccess ? .green : .red)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
-                    .background((context.state.isSuccess ? Color.green : Color.red).opacity(0.12))
+                    .background((context.state.isSuccess ? Color.green : Color.red).opacity(0.18))
                     .cornerRadius(12)
                 } else if context.state.totalSteps > 1 {
                     Text("\(min(context.state.currentStep, context.state.totalSteps))/\(context.state.totalSteps)")
@@ -232,7 +234,7 @@ struct LockScreenLiveActivityView: View {
                         .foregroundColor(accentColorForNodeType(context.state.currentNodeType))
                         .padding(.horizontal, 8)
                         .padding(.vertical, 4)
-                        .background(accentColorForNodeType(context.state.currentNodeType).opacity(0.15))
+                        .background(accentColorForNodeType(context.state.currentNodeType).opacity(0.2))
                         .cornerRadius(12)
                 }
             }
@@ -262,12 +264,12 @@ struct LockScreenLiveActivityView: View {
                 }
                 Text(context.state.status)
                     .font(.system(size: 12, weight: .medium))
-                    .foregroundColor(.secondary)
+                    .foregroundColor(.white.opacity(0.7))
                     .lineLimit(1)
             }
         }
         .padding(14)
-        .background(Color(UIColor.secondarySystemBackground))
+        .background(Color.black)
     }
 }
 
