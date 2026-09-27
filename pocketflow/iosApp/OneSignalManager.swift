@@ -214,14 +214,14 @@ import Shared
     // OSInAppMessageClickListener protocol method
     func onClick(event: OSInAppMessageClickEvent) {
         let actionId = event.result.actionId ?? ""
-        let url = event.result.urlTarget?.description ?? ""
-        print("[OneSignal-IAM-iOS] 👆 In-App Message clicked: actionId=\(actionId), urlTarget=\(url)")
+        let urlString = event.result.url?.absoluteString ?? ""
+        print("[OneSignal-IAM-iOS] 👆 In-App Message clicked: actionId=\(actionId), url=\(urlString)")
         
         let shouldOpenPaywall = actionId.localizedCaseInsensitiveContains("paywall") ||
             actionId.localizedCaseInsensitiveContains("recharge") ||
             actionId.localizedCaseInsensitiveContains("credit") ||
             actionId.localizedCaseInsensitiveContains("buy") ||
-            url.localizedCaseInsensitiveContains("paywall")
+            urlString.localizedCaseInsensitiveContains("paywall")
             
         if shouldOpenPaywall {
             DispatchQueue.main.async {
