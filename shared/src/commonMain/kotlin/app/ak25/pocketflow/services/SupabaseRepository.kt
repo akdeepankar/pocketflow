@@ -355,6 +355,31 @@ object SupabaseRepository {
         }
     }
 
+    /**
+     * Proxy a Runway GET /tasks/{taskId} call through the `runway-poll` Supabase edge function,
+     * so the client doesn't need a valid local Runway API key.
+     * Returns the raw Runway task JSON (with status, output, etc.) or null on failure.
+     */
+    suspend fun pollRunwayTask(taskId: String): kotlinx.serialization.json.JsonObject? = withContext(Dispatchers.IO) {
+        try {
+            val body = buildJsonObject {
+                put("taskId", taskId)
+            }
+            val response = supabaseClient.functions.invoke("runway-poll", body)
+            val responseText = response.bodyAsText()
+            val parsed = json.parseToJsonElement(responseText).jsonObject
+            if (parsed["success"]?.jsonPrimitive?.booleanOrNull == true) {
+                parsed["data"]?.jsonObject
+            } else {
+                println("[Supabase] pollRunwayTask error: ${parsed["error"]}")
+                null
+            }
+        } catch (e: Exception) {
+            println("[Supabase] pollRunwayTask exception: ${e.message}")
+            null
+        }
+    }
+
     suspend fun pollLiveActivityJob(
         jobId: String,
         provider: String = "runway",

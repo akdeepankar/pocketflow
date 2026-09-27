@@ -205,6 +205,10 @@ class RunwayService {
     private suspend fun pollTask(taskId: String): JsonObject {
         var consecutiveErrors = 0
         var lastRenewTime = app.ak25.pocketflow.utils.getCurrentTimeMillis()
+        // Determine if we can use the Supabase proxy (valid JWT available)
+        val useSupabaseProxy = !app.ak25.pocketflow.storage.LocalStorage.loadString("supabase_jwt").isNullOrEmpty()
+                || !app.ak25.pocketflow.storage.LocalStorage.loadString("appwrite_jwt").isNullOrEmpty()
+
         for (i in 0 until 180) { // Poll up to 15 minutes
             delay(5000)
             val now = app.ak25.pocketflow.utils.getCurrentTimeMillis()
@@ -213,6 +217,27 @@ class RunwayService {
                 app.ak25.pocketflow.storage.LocalStorage.beginBackgroundTask("pocketflow_poll_$taskId")
             }
             try {
+                val data: JsonObject? = if (useSupabaseProxy) {
+                    // Route through Supabase edge function (uses valid server-side Runway key)
+                    SupabaseRepository.pollRunwayTask(taskId)
+                } else {
+                    null
+                }
+
+                if (data != null) {
+                    val status = data["status"]?.jsonPrimitive?.content
+                    consecutiveErrors = 0
+                    if (status == "SUCCEEDED") {
+                        return data
+                    } else if (status == "FAILED") {
+                        val failure = data["failure"]?.jsonPrimitive?.content ?: data["failureCode"]?.jsonPrimitive?.content ?: "Task failed"
+                        throw Exception("Task failed: $failure")
+                    }
+                    // PENDING / RUNNING — continue polling
+                    continue
+                }
+
+                // Fallback: direct Runway API call
                 val response = httpClient.get("$runwayBaseUrl/tasks/$taskId") {
                     header("Authorization", "Bearer $runwayApiKey")
                     header("X-Runway-Version", "2024-11-06")
@@ -227,15 +252,15 @@ class RunwayService {
                     continue
                 }
 
-                val data = response.body<JsonObject>()
-                val status = data["status"]?.jsonPrimitive?.content
+                val directData = response.body<JsonObject>()
+                val status = directData["status"]?.jsonPrimitive?.content
 
                 consecutiveErrors = 0
 
                 if (status == "SUCCEEDED") {
-                    return data
+                    return directData
                 } else if (status == "FAILED") {
-                    val failure = data["failure"]?.jsonPrimitive?.content ?: data["failureCode"]?.jsonPrimitive?.content ?: "Task failed"
+                    val failure = directData["failure"]?.jsonPrimitive?.content ?: directData["failureCode"]?.jsonPrimitive?.content ?: "Task failed"
                     throw Exception("Task failed: $failure")
                 }
             } catch (e: Exception) {
