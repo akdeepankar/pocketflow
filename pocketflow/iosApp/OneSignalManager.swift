@@ -22,8 +22,8 @@ import Shared
         // Ensure push subscription is opted in
         OneSignal.User.pushSubscription.optIn()
         
-        // Start paused to prevent premature IAM display attempt when window is not ready
-        OneSignal.InAppMessages.paused = true
+        // Ensure In-App Messages are active and unpaused
+        OneSignal.InAppMessages.paused = false
         
         // Add push subscription observer
         OneSignal.User.pushSubscription.addObserver(self)
@@ -65,12 +65,6 @@ import Shared
         
         // Register OneSignalBridge for KMP triggers and tags
         OneSignalBridgeHolder.shared.current = self
-
-        // Unpause in-app messages after a 2.0s delay to allow SwiftUI / UIKit window to become key and visible
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-            print("[OneSignal-iOS] Unpausing In-App Messages now that UI window is ready.")
-            OneSignal.InAppMessages.paused = false
-        }
     }
     
     @objc private func handleAppWillEnterForeground() {
@@ -229,17 +223,24 @@ import Shared
 
 extension OneSignalManager: OneSignalBridge {
     func addTrigger(key: String, value: String) {
-        OneSignal.InAppMessages.addTrigger(key, withValue: value)
-        print("[OneSignal-iOS] 🎯 Added InApp trigger: '\(key)' = '\(value)'")
+        DispatchQueue.main.async {
+            OneSignal.InAppMessages.paused = false
+            OneSignal.InAppMessages.addTrigger(key, withValue: value)
+            print("[OneSignal-iOS] 🎯 Added InApp trigger: '\(key)' = '\(value)'")
+        }
     }
     
     func removeTrigger(key: String) {
-        OneSignal.InAppMessages.removeTrigger(key)
-        print("[OneSignal-iOS] 🗑️ Removed InApp trigger: '\(key)'")
+        DispatchQueue.main.async {
+            OneSignal.InAppMessages.removeTrigger(key)
+            print("[OneSignal-iOS] 🗑️ Removed InApp trigger: '\(key)'")
+        }
     }
     
     func addTag(key: String, value: String) {
-        OneSignal.User.addTag(key: key, value: value)
-        print("[OneSignal-iOS] 🏷️ Added User tag: '\(key)' = '\(value)'")
+        DispatchQueue.main.async {
+            OneSignal.User.addTag(key: key, value: value)
+            print("[OneSignal-iOS] 🏷️ Added User tag: '\(key)' = '\(value)'")
+        }
     }
 }
