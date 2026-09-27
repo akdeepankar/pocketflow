@@ -14,7 +14,7 @@ public struct PocketFlowActivityAttributes: ActivityAttributes {
         public var progress: Double          // 0.0 to 1.0 (-1.0 for indeterminate)
         public var isFinished: Bool
         public var isSuccess: Bool
-        public var timestamp: Date
+        public var timestamp: Double
 
         public init(
             status: String,
@@ -28,7 +28,7 @@ public struct PocketFlowActivityAttributes: ActivityAttributes {
             progress: Double = -1.0,
             isFinished: Bool = false,
             isSuccess: Bool = false,
-            timestamp: Date = Date()
+            timestamp: Double = Date().timeIntervalSince1970
         ) {
             self.status = status
             self.nodeTitle = nodeTitle

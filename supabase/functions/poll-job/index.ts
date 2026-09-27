@@ -25,20 +25,53 @@ export default {
 
     console.log(`[poll-job] 🎯 Received job for Live Activity polling: jobId=${jobId}, provider=${provider}`);
 
+    // Helper to send Live Activity remote updates to OneSignal
+    const sendLiveActivityEvent = async (
+      activityId: string,
+      event: "update" | "end",
+      eventUpdates: Record<string, unknown>
+    ) => {
+      if (!activityId || !oneSignalRestKey) return;
+      try {
+        console.log(`[poll-job] 📡 Sending Live Activity [${event}] for activity: ${activityId}`);
+        const res = await fetch(
+          `https://onesignal.com/api/v1/apps/${ONESIGNAL_APP_ID}/live_activities/${activityId}/notifications`,
+          {
+            method: "POST",
+            headers: {
+              "Authorization": `Key ${oneSignalRestKey}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              name: `PocketFlow Live Activity ${event === "end" ? "End" : "Update"}`,
+              event,
+              event_updates: eventUpdates,
+            }),
+          }
+        );
+        const resText = await res.text();
+        console.log(`[poll-job] OneSignal Live Activity [${event}] response HTTP ${res.status}: ${resText}`);
+      } catch (err) {
+        console.error(`[poll-job] Failed to send Live Activity [${event}] notification:`, err);
+      }
+    };
+
     // Run polling and OneSignal Live Activity updates asynchronously in background
     ctx.waitUntil((async () => {
       console.log(`[poll-job] 🚀 Starting Live Activity poller for task: ${jobId}`);
-      const maxAttempts = 180; // 15 mins maximum
+      const maxAttempts = 180; // ~15 mins maximum (180 * 5s)
       let status = "PENDING";
       let outputUrl: string | null = null;
       let errorMessage: string | null = null;
-      let lastProgressRatio = -1;
+      let lastSentStatus = "";
+      let lastSentProgress = -2;
+      let lastSentTime = Date.now();
 
       const nodeTitle = liveActivity?.nodeTitle || "Generation";
       const workflowName = liveActivity?.workflowName || "Workflow";
-      const totalSteps = liveActivity?.totalSteps || 1;
-      const currentStep = liveActivity?.currentStep || 1;
-      const stepNodeTypes = liveActivity?.stepNodeTypes || [];
+      const totalSteps = Number(liveActivity?.totalSteps) || 1;
+      const currentStep = Number(liveActivity?.currentStep) || 1;
+      const stepNodeTypes: string[] = Array.isArray(liveActivity?.stepNodeTypes) ? liveActivity.stepNodeTypes : [];
       const nodeType = liveActivity?.nodeType || "VIDEO_GENERATION";
       const activityId = liveActivity?.activityId;
 
@@ -61,51 +94,60 @@ export default {
 
             const pollData = await pollRes.json();
             status = pollData.status;
-            const progressRatio = typeof pollData.progressRatio === "number" ? pollData.progressRatio : -1;
+            const rawProgressRatio = typeof pollData.progressRatio === "number" ? pollData.progressRatio : -1;
 
-            // Send intermediate OneSignal Live Activity update if progress advanced
-            if (activityId && oneSignalRestKey && (status === "RUNNING" || status === "PENDING")) {
-              if (progressRatio > 0 && Math.abs(progressRatio - lastProgressRatio) >= 0.1) {
-                lastProgressRatio = progressRatio;
-                const percent = Math.round(progressRatio * 100);
-                const progressStatusText = totalSteps > 1
+            // Determine display status text
+            let currentStatusText: string;
+            if (status === "RUNNING") {
+              if (rawProgressRatio > 0) {
+                const percent = Math.round(rawProgressRatio * 100);
+                currentStatusText = totalSteps > 1
                   ? `Step ${currentStep}/${totalSteps}: Generating ${nodeTitle} (${percent}%)...`
                   : `Generating ${nodeTitle} (${percent}%)...`;
-
-                try {
-                  console.log(`[poll-job] 📡 Sending Live Activity progress update (${percent}%) for ${activityId}`);
-                  await fetch(
-                    `https://onesignal.com/api/v1/apps/${ONESIGNAL_APP_ID}/live_activities/${activityId}/notifications`,
-                    {
-                      method: "POST",
-                      headers: {
-                        "Authorization": `Key ${oneSignalRestKey}`,
-                        "Content-Type": "application/json",
-                      },
-                      body: JSON.stringify({
-                        name: "PocketFlow Live Activity Progress Update",
-                        event: "update",
-                        event_updates: {
-                          status: progressStatusText,
-                          nodeTitle,
-                          workflowName,
-                          currentStep,
-                          totalSteps,
-                          completedSteps: currentStep - 1,
-                          stepNodeTypes,
-                          currentNodeType: nodeType,
-                          progress: progressRatio,
-                          isFinished: false,
-                          isSuccess: false,
-                          timestamp: Math.floor(Date.now() / 1000),
-                        },
-                      }),
-                    }
-                  );
-                } catch (updateErr) {
-                  console.error(`[poll-job] Failed to send Live Activity progress update:`, updateErr);
-                }
+              } else {
+                currentStatusText = totalSteps > 1
+                  ? `Step ${currentStep}/${totalSteps}: Generating ${nodeTitle}...`
+                  : `Generating ${nodeTitle}...`;
               }
+            } else if (status === "PENDING") {
+              currentStatusText = totalSteps > 1
+                ? `Step ${currentStep}/${totalSteps}: Queued for ${nodeTitle}...`
+                : `Queued for ${nodeTitle}...`;
+            } else {
+              currentStatusText = `${nodeTitle}: ${status}`;
+            }
+
+            // Send intermediate OneSignal Live Activity update if status changed,
+            // progress advanced by >= 10%, or periodically every 20 seconds
+            const now = Date.now();
+            const timeSinceLastUpdate = now - lastSentTime;
+            const progressDelta = Math.abs(rawProgressRatio - lastSentProgress);
+            const shouldSendUpdate =
+              activityId &&
+              (status === "RUNNING" || status === "PENDING") &&
+              (currentStatusText !== lastSentStatus ||
+                (rawProgressRatio > 0 && progressDelta >= 0.1) ||
+                timeSinceLastUpdate >= 20000);
+
+            if (shouldSendUpdate) {
+              lastSentStatus = currentStatusText;
+              lastSentProgress = rawProgressRatio;
+              lastSentTime = now;
+
+              await sendLiveActivityEvent(activityId, "update", {
+                status: currentStatusText,
+                nodeTitle,
+                workflowName,
+                currentStep,
+                totalSteps,
+                completedSteps: Math.max(0, currentStep - 1),
+                stepNodeTypes,
+                currentNodeType: nodeType,
+                progress: rawProgressRatio,
+                isFinished: false,
+                isSuccess: false,
+                timestamp: Date.now() / 1000,
+              });
             }
 
             if (status === "SUCCEEDED") {
@@ -126,54 +168,32 @@ export default {
       const isSuccess = status === "SUCCEEDED";
 
       // 1. Send OneSignal Live Activity Remote End Event
-      if (activityId && oneSignalRestKey) {
+      if (activityId) {
         const finalStatusText = isSuccess
           ? (totalSteps > 1 ? `All ${totalSteps} nodes completed! ✓` : `${nodeTitle} Completed! ✓`)
           : (errorMessage || "Generation Failed");
 
-        const liveActivityPayload = {
-          name: "PocketFlow Live Activity Completion",
-          event: "end",
-          event_updates: {
-            status: finalStatusText,
-            nodeTitle,
-            workflowName,
-            currentStep: totalSteps,
-            totalSteps,
-            completedSteps: isSuccess ? totalSteps : Math.max(0, currentStep - 1),
-            stepNodeTypes,
-            currentNodeType: nodeType,
-            progress: 1.0,
-            isFinished: true,
-            isSuccess,
-            timestamp: Math.floor(Date.now() / 1000),
-          },
-        };
-
-        try {
-          console.log(`[poll-job] 🏁 Sending Live Activity END event for activity: ${activityId}`);
-          const laRes = await fetch(
-            `https://onesignal.com/api/v1/apps/${ONESIGNAL_APP_ID}/live_activities/${activityId}/notifications`,
-            {
-              method: "POST",
-              headers: {
-                "Authorization": `Key ${oneSignalRestKey}`,
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify(liveActivityPayload),
-            }
-          );
-          console.log(`[poll-job] OneSignal Live Activity end status: ${laRes.status}`);
-        } catch (laErr) {
-          console.error(`[poll-job] Failed to send Live Activity end notification:`, laErr);
-        }
+        await sendLiveActivityEvent(activityId, "end", {
+          status: finalStatusText,
+          nodeTitle,
+          workflowName,
+          currentStep: totalSteps,
+          totalSteps,
+          completedSteps: isSuccess ? totalSteps : Math.max(0, currentStep - 1),
+          stepNodeTypes,
+          currentNodeType: nodeType,
+          progress: 1.0,
+          isFinished: true,
+          isSuccess,
+          timestamp: Date.now() / 1000,
+        });
       }
 
       // 2. Send Push Notification to target user
       if (recipientUserId && recipientUserId.trim().length > 0 && oneSignalRestKey) {
         try {
           console.log(`[poll-job] 🔔 Sending push notification to user: ${recipientUserId}`);
-          await fetch("https://onesignal.com/api/v1/notifications", {
+          const pushRes = await fetch("https://onesignal.com/api/v1/notifications", {
             method: "POST",
             headers: {
               "Authorization": `Key ${oneSignalRestKey}`,
@@ -199,6 +219,8 @@ export default {
               },
             }),
           });
+          const pushText = await pushRes.text();
+          console.log(`[poll-job] Push notification response HTTP ${pushRes.status}: ${pushText}`);
         } catch (pushErr) {
           console.error(`[poll-job] Error sending push notification:`, pushErr);
         }
