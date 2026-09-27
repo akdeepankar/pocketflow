@@ -68,16 +68,16 @@ class MainActivity : ComponentActivity() {
 
         // Listen for In-App Message lifecycle events for diagnostics
         OneSignal.InAppMessages.addLifecycleListener(object : com.onesignal.inAppMessages.IInAppMessageLifecycleListener {
-            override fun onWillDisplayInAppMessage(event: com.onesignal.inAppMessages.IInAppMessageWillDisplayEvent) {
+            override fun onWillDisplay(event: com.onesignal.inAppMessages.IInAppMessageWillDisplayEvent) {
                 println("[OneSignal-IAM-Android] 💬 In-App Message WILL display: messageId=${event.message.messageId}")
             }
-            override fun onDidDisplayInAppMessage(event: com.onesignal.inAppMessages.IInAppMessageDidDisplayEvent) {
+            override fun onDidDisplay(event: com.onesignal.inAppMessages.IInAppMessageDidDisplayEvent) {
                 println("[OneSignal-IAM-Android] 📺 In-App Message DID display: messageId=${event.message.messageId}")
             }
-            override fun onWillDismissInAppMessage(event: com.onesignal.inAppMessages.IInAppMessageWillDismissEvent) {
+            override fun onWillDismiss(event: com.onesignal.inAppMessages.IInAppMessageWillDismissEvent) {
                 println("[OneSignal-IAM-Android] 🚪 In-App Message WILL dismiss: messageId=${event.message.messageId}")
             }
-            override fun onDidDismissInAppMessage(event: com.onesignal.inAppMessages.IInAppMessageDidDismissEvent) {
+            override fun onDidDismiss(event: com.onesignal.inAppMessages.IInAppMessageDidDismissEvent) {
                 println("[OneSignal-IAM-Android] ✅ In-App Message DID dismiss: messageId=${event.message.messageId}")
             }
         })
