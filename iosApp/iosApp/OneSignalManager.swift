@@ -3,6 +3,7 @@ import UIKit
 import UserNotifications
 import OneSignalFramework
 import OneSignalInAppMessages
+import OneSignalLiveActivities
 import Shared
 
 @objc final class OneSignalManager: NSObject, OSPushSubscriptionObserver, OSNotificationLifecycleListener, OSNotificationClickListener, OSInAppMessageLifecycleListener, OSInAppMessageClickListener {

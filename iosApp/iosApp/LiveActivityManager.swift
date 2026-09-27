@@ -79,12 +79,27 @@ final class LiveActivityManager: NSObject, @preconcurrency LiveActivityBridge {
             activeActivities[nodeId] = activity
             print("[LiveActivity] 🚀 Started Live Activity for \(nodeId) (id: \(activity.id), steps: \(currentStep)/\(totalSteps))")
 
+            // Register initial push token if already available
+            if let currentToken = activity.pushToken {
+                let tokenString = currentToken.map { String(format: "%02.2hhx", $0) }.joined()
+                print("[LiveActivity] 🔑 Immediate Push token available for \(nodeId): \(tokenString)")
+                OneSignal.LiveActivities.enter(nodeId, withToken: tokenString, withSuccess: { res in
+                    print("[LiveActivity] 📡 OneSignal.LiveActivities.enter immediate success for \(nodeId): \(String(describing: res))")
+                }, withFailure: { err in
+                    print("[LiveActivity] ❌ OneSignal.LiveActivities.enter immediate error for \(nodeId): \(String(describing: err))")
+                })
+            }
+
+            // Continuously listen for APNs push token updates
             Task {
                 for await pushToken in activity.pushTokenUpdates {
                     let tokenString = pushToken.map { String(format: "%02.2hhx", $0) }.joined()
-                    print("[LiveActivity] 🔑 Push token generated for \(nodeId): \(tokenString)")
-                    OneSignal.LiveActivities.enter(nodeId, withToken: tokenString)
-                    print("[LiveActivity] 📡 OneSignal.LiveActivities.enter called successfully for \(nodeId)")
+                    print("[LiveActivity] 🔑 Async Push token update for \(nodeId): \(tokenString)")
+                    OneSignal.LiveActivities.enter(nodeId, withToken: tokenString, withSuccess: { res in
+                        print("[LiveActivity] 📡 OneSignal.LiveActivities.enter async success for \(nodeId): \(String(describing: res))")
+                    }, withFailure: { err in
+                        print("[LiveActivity] ❌ OneSignal.LiveActivities.enter async error for \(nodeId): \(String(describing: err))")
+                    })
                 }
             }
         } catch {

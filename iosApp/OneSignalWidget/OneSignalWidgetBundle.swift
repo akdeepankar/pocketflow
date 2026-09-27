@@ -14,6 +14,5 @@ struct OneSignalWidgetBundle: WidgetBundle {
         PocketFlowLiveActivityWidget()
         OneSignalWidget()
         OneSignalWidgetControl()
-        OneSignalWidgetLiveActivity()
     }
 }
