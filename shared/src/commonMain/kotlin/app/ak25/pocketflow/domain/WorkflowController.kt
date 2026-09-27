@@ -125,7 +125,6 @@ class WorkflowController {
             val jsonStr = app.ak25.pocketflow.storage.LocalStorage.loadString("workflows")
             if (jsonStr != null) {
                 _workflows.value = json.decodeFromString<List<Workflow>>(jsonStr)
-                updateWorkflowCountTriggers(_workflows.value.size)
             }
         } catch (e: Exception) {
             e.printStackTrace()
@@ -184,7 +183,6 @@ class WorkflowController {
         _workflows.value = merged
         // Persist merged result locally
         saveToLocal(merged)
-        updateWorkflowCountTriggers(merged.size)
         // Push any local-only workflows that aren't in cloud yet (includes
         // workflows created during a guest session) — owned by the logged-in user.
         merged.filter { it.id !in cloudIds }.forEach { wf ->
@@ -401,77 +399,26 @@ class WorkflowController {
         )
         // Fire explicit triggers for newly created workflow
         scope.launch(Dispatchers.Main) {
-            val count = updated.size
-            val countStr = count.toString()
-
             // 1st Pulse (after short screen transition)
             delay(500)
-            println("[OneSignal-IAM] 🎯 [Pulse 1] Firing workflow creation triggers (count=$count)")
-            dispatchWorkflowCreationTriggers(count, countStr)
+            println("""
+            [OneSignal-IAM] ══════════════════════════════════════════════════
+            [OneSignal-IAM] 🎯 Firing Workflow Created Triggers
+            [OneSignal-IAM] Setting Trigger: 'workflow_created' = 'true'
+            [OneSignal-IAM] Setting Trigger: 'action' = 'workflow_created'
+            [OneSignal-IAM] ══════════════════════════════════════════════════
+            """.trimIndent())
+            dispatchWorkflowCreatedTriggers()
 
             // 2nd Pulse (ensures iOS UIKit has finished full view hierarchy presentation & keyboard dismiss)
             delay(1000)
-            println("[OneSignal-IAM] 🎯 [Pulse 2] Re-evaluating workflow creation triggers (count=$count)")
-            dispatchWorkflowCreationTriggers(count, countStr)
+            dispatchWorkflowCreatedTriggers()
         }
     }
 
-    private fun dispatchWorkflowCreationTriggers(count: Int, countStr: String) {
+    private fun dispatchWorkflowCreatedTriggers() {
         app.ak25.pocketflow.platform.OneSignalBridgeHolder.addTrigger("workflow_created", "true")
-        app.ak25.pocketflow.platform.OneSignalBridgeHolder.addTrigger("new_workflow_created", "true")
-        app.ak25.pocketflow.platform.OneSignalBridgeHolder.addTrigger("create_workflow", "true")
         app.ak25.pocketflow.platform.OneSignalBridgeHolder.addTrigger("action", "workflow_created")
-        app.ak25.pocketflow.platform.OneSignalBridgeHolder.addTrigger("event", "workflow_created")
-        app.ak25.pocketflow.platform.OneSignalBridgeHolder.addTag("last_action", "workflow_created")
-
-        updateWorkflowCountTriggers(count)
-    }
-
-    private fun updateWorkflowCountTriggers(count: Int) {
-        val countStr = count.toString()
-        println("""
-        [OneSignal-IAM] ══════════════════════════════════════════════════
-        [OneSignal-IAM] 📊 Evaluating In-App Message Triggers
-        [OneSignal-IAM] Current Workflows Count: $count
-        [OneSignal-IAM] Setting Trigger: 'workflow_count' = '$countStr'
-        [OneSignal-IAM] Setting Trigger: 'workflows_created' = '$countStr'
-        """.trimIndent())
-        app.ak25.pocketflow.platform.OneSignalBridgeHolder.addTrigger("workflow_count", countStr)
-        app.ak25.pocketflow.platform.OneSignalBridgeHolder.addTrigger("workflows_created", countStr)
-        app.ak25.pocketflow.platform.OneSignalBridgeHolder.addTag("workflow_count", countStr)
-        app.ak25.pocketflow.platform.OneSignalBridgeHolder.addTag("workflows_created", countStr)
-
-        if (count == 1) {
-            println("[OneSignal-IAM] 🌟 First workflow milestone reached (count=1)!")
-            app.ak25.pocketflow.platform.OneSignalBridgeHolder.removeTrigger("first_workflow_created")
-            app.ak25.pocketflow.platform.OneSignalBridgeHolder.addTrigger("first_workflow_created", "true")
-            app.ak25.pocketflow.platform.OneSignalBridgeHolder.addTag("has_created_first_workflow", "true")
-        }
-
-        if (count >= 3) {
-            app.ak25.pocketflow.platform.OneSignalBridgeHolder.addTrigger("three_workflows_created", "true")
-            app.ak25.pocketflow.platform.OneSignalBridgeHolder.addTrigger("created_3_workflows", "true")
-            app.ak25.pocketflow.platform.OneSignalBridgeHolder.addTag("has_created_3_workflows", "true")
-        }
-
-        if (count >= 7) {
-            println("""
-            [OneSignal-IAM] 🎯 Target Condition Satisfied (count >= 7)!
-            [OneSignal-IAM] Setting Trigger: 'seven_workflows_created' = 'true'
-            [OneSignal-IAM] Setting Trigger: 'created_7_workflows' = 'true'
-            [OneSignal-IAM] Setting Tag: 'has_created_7_workflows' = 'true'
-            [OneSignal-IAM] ══════════════════════════════════════════════════
-            """.trimIndent())
-            app.ak25.pocketflow.platform.OneSignalBridgeHolder.addTrigger("seven_workflows_created", "true")
-            app.ak25.pocketflow.platform.OneSignalBridgeHolder.addTrigger("created_7_workflows", "true")
-            app.ak25.pocketflow.platform.OneSignalBridgeHolder.addTrigger("seven_workflows", "true")
-            app.ak25.pocketflow.platform.OneSignalBridgeHolder.addTag("has_created_7_workflows", "true")
-        } else {
-            println("""
-            [OneSignal-IAM] ℹ️ Waiting for 7 workflows (currently at $count/7).
-            [OneSignal-IAM] ══════════════════════════════════════════════════
-            """.trimIndent())
-        }
     }
 
     fun loadWorkflow(workflowId: String) {
