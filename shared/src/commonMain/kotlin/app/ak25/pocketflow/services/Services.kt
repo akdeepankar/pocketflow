@@ -199,15 +199,18 @@ class ExecutionEngine(private val controller: WorkflowController) {
                             jobId = latestJobId
                         )
                         println("[ExecutionEngine] Node $nodeId failed: ${e.message}")
-                        // End Live Activity on failure
+                        // End Live Activity on failure (only for single-node runs)
                         try {
-                            app.ak25.pocketflow.storage.LocalStorage.endLiveActivity(
-                                nodeId = effectiveActivityKey,
-                                isSuccess = false,
-                                message = if (totalSteps > 1) "Step $currentStep ($displayTitle) failed" else "Generation failed",
-                                completedSteps = completedSteps,
-                                totalSteps = totalSteps
-                            )
+                            if (activityKey == null) {
+                                app.ak25.pocketflow.storage.LocalStorage.endLiveActivity(
+                                    nodeId = effectiveActivityKey,
+                                    isSuccess = false,
+                                    message = if (totalSteps > 1) "Step $currentStep ($displayTitle) failed" else "Generation failed",
+                                    completedSteps = completedSteps,
+                                    totalSteps = totalSteps
+                                )
+                            }
+                            // For workflow runs, runWorkflow handles the endLiveActivity
                         } catch (ex: Exception) {}
 
                         // Show Local Notification on failure
@@ -292,25 +295,31 @@ class ExecutionEngine(private val controller: WorkflowController) {
         } catch (e: kotlinx.coroutines.CancellationException) {
             println("[ExecutionEngine] Node $nodeId execution cancelled.")
             try {
-                app.ak25.pocketflow.storage.LocalStorage.endLiveActivity(
-                    nodeId = effectiveActivityKey,
-                    isSuccess = false,
-                    message = "Cancelled",
-                    completedSteps = completedSteps,
-                    totalSteps = totalSteps
-                )
+                if (activityKey == null) {
+                    app.ak25.pocketflow.storage.LocalStorage.endLiveActivity(
+                        nodeId = effectiveActivityKey,
+                        isSuccess = false,
+                        message = "Cancelled",
+                        completedSteps = completedSteps,
+                        totalSteps = totalSteps
+                    )
+                }
+                // For workflow runs, runWorkflow handles the endLiveActivity
             } catch (ex: Exception) {}
             throw e
         } catch (e: Exception) {
             println("[ExecutionEngine] Node $nodeId unexpected error: ${e.message}")
             try {
-                app.ak25.pocketflow.storage.LocalStorage.endLiveActivity(
-                    nodeId = effectiveActivityKey,
-                    isSuccess = false,
-                    message = "Failed",
-                    completedSteps = completedSteps,
-                    totalSteps = totalSteps
-                )
+                if (activityKey == null) {
+                    app.ak25.pocketflow.storage.LocalStorage.endLiveActivity(
+                        nodeId = effectiveActivityKey,
+                        isSuccess = false,
+                        message = "Failed",
+                        completedSteps = completedSteps,
+                        totalSteps = totalSteps
+                    )
+                }
+                // For workflow runs, runWorkflow handles the endLiveActivity
             } catch (ex: Exception) {}
             false
         } finally {

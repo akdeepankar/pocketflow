@@ -210,31 +210,58 @@ Deno.serve(async (req: Request) => {
     }
 
     const isSuccess = status === "SUCCEEDED";
+    const isLastStep = currentStep >= totalSteps;
 
-    // 1. Send OneSignal Live Activity Remote End Event
+    // 1. Send OneSignal Live Activity Update or End Event
+    //    Only "end" the Live Activity if this is the last step in the workflow
+    //    or if the task failed. For intermediate steps, send "update" so the
+    //    activity persists for the next node.
     if (activityId) {
-      const finalStatusText = isSuccess
-        ? (totalSteps > 1 ? `All ${totalSteps} nodes completed! ✓` : `${nodeTitle} Completed! ✓`)
-        : (errorMessage || "Generation Failed");
+      if (isSuccess && !isLastStep) {
+        // Intermediate step succeeded — update (don't end) so activity persists
+        const stepDoneText = totalSteps > 1
+          ? `Step ${currentStep}/${totalSteps}: ${nodeTitle} Completed ✓`
+          : `${nodeTitle} Completed! ✓`;
 
-      await sendLiveActivityEvent(activityId, "end", {
-        status: finalStatusText,
-        nodeTitle,
-        workflowName,
-        currentStep: totalSteps,
-        totalSteps,
-        completedSteps: isSuccess ? totalSteps : Math.max(0, currentStep - 1),
-        stepNodeTypes,
-        currentNodeType: nodeType,
-        progress: 1.0,
-        isFinished: true,
-        isSuccess,
-        timestamp: Date.now() / 1000,
-      });
+        await sendLiveActivityEvent(activityId, "update", {
+          status: stepDoneText,
+          nodeTitle,
+          workflowName,
+          currentStep,
+          totalSteps,
+          completedSteps: currentStep,
+          stepNodeTypes,
+          currentNodeType: nodeType,
+          progress: currentStep / totalSteps,
+          isFinished: false,
+          isSuccess: true,
+          timestamp: Date.now() / 1000,
+        });
+      } else {
+        // Final step succeeded OR any step failed — end the activity
+        const finalStatusText = isSuccess
+          ? (totalSteps > 1 ? `All ${totalSteps} nodes completed! ✓` : `${nodeTitle} Completed! ✓`)
+          : (errorMessage || "Generation Failed");
+
+        await sendLiveActivityEvent(activityId, "end", {
+          status: finalStatusText,
+          nodeTitle,
+          workflowName,
+          currentStep: isSuccess ? totalSteps : currentStep,
+          totalSteps,
+          completedSteps: isSuccess ? totalSteps : Math.max(0, currentStep - 1),
+          stepNodeTypes,
+          currentNodeType: nodeType,
+          progress: isSuccess ? 1.0 : currentStep / totalSteps,
+          isFinished: true,
+          isSuccess,
+          timestamp: Date.now() / 1000,
+        });
+      }
     }
 
-    // 2. Send Push Notification to target user
-    if (recipientUserId && recipientUserId.trim().length > 0 && oneSignalRestKey) {
+    // 2. Send Push Notification to target user (only on final step or failure)
+    if ((isLastStep || !isSuccess) && recipientUserId && recipientUserId.trim().length > 0 && oneSignalRestKey) {
       try {
         console.log(`[poll-job] 🔔 Sending push notification to user: ${recipientUserId}`);
         const pushRes = await fetch("https://onesignal.com/api/v1/notifications", {
