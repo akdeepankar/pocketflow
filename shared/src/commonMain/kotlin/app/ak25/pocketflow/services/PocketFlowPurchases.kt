@@ -508,6 +508,37 @@ object PocketFlowPurchases {
     }
 
     /**
+     * Calculate credits for Audio / Text-To-Speech generation based on word count tiers.
+     */
+    fun calculateAudioCredits(wordCount: Int): Int {
+        return when {
+            wordCount <= 50 -> NodeCreditRatesManager.getRate("tts_tier_50_words", 1)
+            wordCount <= 150 -> NodeCreditRatesManager.getRate("tts_tier_150_words", 2)
+            wordCount <= 300 -> NodeCreditRatesManager.getRate("tts_tier_300_words", 4)
+            wordCount <= 600 -> NodeCreditRatesManager.getRate("tts_tier_600_words", 8)
+            else -> NodeCreditRatesManager.getRate("tts_tier_1000_words", 15)
+        }
+    }
+
+    /**
+     * Estimate the credit cost for a single node run within a workflow context (resolving linked ports).
+     */
+    fun estimateNodeCredits(node: WorkflowNode, workflow: Workflow?): Int {
+        if (node.type == NodeType.TEXT_TO_SPEECH && workflow != null) {
+            val promptEdge = workflow.edges.find { it.targetNodeId == node.id && it.targetPortId == "prompt" }
+            val promptSourceText = promptEdge?.let { edge ->
+                workflow.nodes
+                    .find { it.id == edge.sourceNodeId && it.type == NodeType.TEXT_PROMPT }
+                    ?.params?.get("text")
+            }
+            val text = (promptSourceText ?: node.params["text"]).orEmpty().trim()
+            val words = if (text.isEmpty()) 0 else text.split(Regex("\\s+")).count { it.isNotBlank() }
+            return calculateAudioCredits(words)
+        }
+        return estimateNodeCredits(node)
+    }
+
+    /**
      * Estimate the credit cost for a single node run.
      */
     fun estimateNodeCredits(node: WorkflowNode): Int {
@@ -580,6 +611,11 @@ object PocketFlowPurchases {
                 ratePerSec * duration
             }
             NodeType.AD_LOCALIZATION -> NodeCreditRatesManager.getRate("ad_localization", 18)
+            NodeType.TEXT_TO_SPEECH -> {
+                val text = (node.params["text"] ?: "").trim()
+                val words = if (text.isEmpty()) 0 else text.split(Regex("\\s+")).count { it.isNotBlank() }
+                calculateAudioCredits(words)
+            }
             NodeType.MARKETING_STOCK_IMAGE -> {
                 val quality = (node.params["quality"] ?: "medium").lowercase()
                 val count = node.params["outputCount"]?.toIntOrNull() ?: 4
@@ -606,9 +642,9 @@ object PocketFlowPurchases {
     fun estimateWorkflowCredits(workflow: Workflow?, onlyEmpty: Boolean = false): Int {
         if (workflow == null) return 0
         if (!onlyEmpty) {
-            return workflow.nodes.sumOf { estimateNodeCredits(it) }
+            return workflow.nodes.sumOf { estimateNodeCredits(it, workflow) }
         }
-        return getNodesNeedingRun(workflow).sumOf { estimateNodeCredits(it) }
+        return getNodesNeedingRun(workflow).sumOf { estimateNodeCredits(it, workflow) }
     }
 
     /**

@@ -345,6 +345,20 @@ fun NodeInspectorBottomSheet(
                                 hint = "Enter text to speak..."
                             )
                         }
+                        val resolvedText = if (textSrc != null && textSrc.type == app.ak25.pocketflow.models.NodeType.TEXT_PROMPT) {
+                            (textSrc.params["text"] ?: "").trim()
+                        } else {
+                            (node.params["text"] ?: "").trim()
+                        }
+                        val wordCount = if (resolvedText.isEmpty()) 0 else resolvedText.split(Regex("\\s+")).count { it.isNotBlank() }
+                        val audioCost = app.ak25.pocketflow.services.PocketFlowPurchases.calculateAudioCredits(wordCount)
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "$wordCount words • $audioCost ${if (audioCost == 1) "credit" else "credits"} (1c: ≤50w, 2c: ≤150w, 4c: ≤300w, 8c: ≤600w, 15c: 600w+)",
+                            fontSize = 11.sp,
+                            color = Color(0xFF666666),
+                            fontWeight = FontWeight.Medium
+                        )
                         Spacer(modifier = Modifier.height(14.dp))
                         Label("Voice")
                         ConfigChips(
@@ -1115,7 +1129,7 @@ fun NodeInspectorBottomSheet(
                             Spacer(modifier = Modifier.width(10.dp))
                             Text("Stop Generation", fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
                         } else {
-                            val creditCost = app.ak25.pocketflow.services.PocketFlowPurchases.estimateNodeCredits(node)
+                            val creditCost = app.ak25.pocketflow.services.PocketFlowPurchases.estimateNodeCredits(node, workflow)
                             val label = if (node.status == NodeStatus.COMPLETED) "Regenerate" else "Run Generation"
                             Text("$label ($creditCost credits)", fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
                         }

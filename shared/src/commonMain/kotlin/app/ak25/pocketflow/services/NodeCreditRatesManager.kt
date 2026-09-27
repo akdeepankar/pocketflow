@@ -57,8 +57,16 @@ object NodeCreditRatesManager {
         "marketing_stock_3_high" to 65,
         "marketing_stock_4_low" to 24,
         "marketing_stock_4_medium" to 36,
-        "marketing_stock_4_high" to 80,
-        "product_campaign" to 100
+        "product_campaign" to 100,
+
+        // =========================
+        // 🎙️ Audio / Text to Speech (word-based tiers)
+        // =========================
+        "tts_tier_50_words" to 1,     // 1 to 50 words
+        "tts_tier_150_words" to 2,    // 51 to 150 words
+        "tts_tier_300_words" to 4,    // 151 to 300 words
+        "tts_tier_600_words" to 8,    // 301 to 600 words
+        "tts_tier_1000_words" to 15   // 601+ words
     )
 
     private val json = Json { ignoreUnknownKeys = true }

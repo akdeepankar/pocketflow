@@ -200,7 +200,7 @@ fun EditorScreen(
                 if (!jId.isNullOrEmpty() && node.outputUrl.isNullOrEmpty()) {
                     engine.engineScope.launch {
                         val previousBalance = PocketFlowPurchases.getAvailableCreditsBalance()
-                        val expectedDeduction = PocketFlowPurchases.estimateNodeCredits(node)
+                        val expectedDeduction = PocketFlowPurchases.estimateNodeCredits(node, currentWf)
                         val success = engine.runNode(node.id)
                         if (success) {
                             val deductSuccess = PocketFlowPurchases.deductCredits(expectedDeduction)
@@ -220,7 +220,7 @@ fun EditorScreen(
         if (isCheckingCredits) return
         val requiredCredits = when (request) {
             is RunRequest.Node -> workflow?.nodes?.find { it.id == request.nodeId }
-                ?.let { PocketFlowPurchases.estimateNodeCredits(it) } ?: 0
+                ?.let { PocketFlowPurchases.estimateNodeCredits(it, workflow) } ?: 0
             is RunRequest.Workflow -> PocketFlowPurchases.estimateWorkflowCredits(workflow, onlyEmpty = request.onlyEmpty)
         }
         val actionName = when (request) {
@@ -1394,7 +1394,7 @@ fun EditorScreen(
                                                     NodeType.MARKETING_STOCK_IMAGE -> "21-80c"
                                                     NodeType.PRODUCT_CAMPAIGN -> "100c"
                                                     NodeType.MODEL3D_GENERATION -> "2c"
-                                                    NodeType.TEXT_TO_SPEECH -> "1c"
+                                                    NodeType.TEXT_TO_SPEECH -> "1-15c"
                                                     else -> "1c"
                                                 }
                                                 Text(

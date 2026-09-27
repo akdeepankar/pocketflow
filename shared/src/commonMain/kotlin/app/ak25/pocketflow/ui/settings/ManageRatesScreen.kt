@@ -91,6 +91,13 @@ fun ManageRatesScreen(onBack: () -> Unit) {
                         "marketing_stock_4_medium" to "Marketing Stock (4 Img – ✨ Balanced)",
                         "marketing_stock_4_high" to "Marketing Stock (4 Img – 💎 Best)",
                         "product_campaign" to "Product Campaign (4 Images)"
+                    ),
+                    "🎙️ Audio / Text to Speech (Word Tiers)" to listOf(
+                        "tts_tier_50_words" to "Audio – Up to 50 words",
+                        "tts_tier_150_words" to "Audio – 51 to 150 words",
+                        "tts_tier_300_words" to "Audio – 151 to 300 words",
+                        "tts_tier_600_words" to "Audio – 301 to 600 words",
+                        "tts_tier_1000_words" to "Audio – 601+ words"
                     )
                 )
 

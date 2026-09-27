@@ -68,7 +68,7 @@ fun App() {
                             if (!jId.isNullOrEmpty() && node.outputUrl.isNullOrEmpty()) {
                                 engine.engineScope.launch {
                                     val previousBalance = app.ak25.pocketflow.services.PocketFlowPurchases.getAvailableCreditsBalance()
-                                    val expectedDeduction = app.ak25.pocketflow.services.PocketFlowPurchases.estimateNodeCredits(node)
+                                    val expectedDeduction = app.ak25.pocketflow.services.PocketFlowPurchases.estimateNodeCredits(node, wf)
                                     val success = engine.runNode(node.id)
                                     if (success) {
                                         val deductSuccess = app.ak25.pocketflow.services.PocketFlowPurchases.deductCredits(expectedDeduction)
