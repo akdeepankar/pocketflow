@@ -82,43 +82,8 @@ struct LoginView: View {
                     .padding(.bottom, 16)
                 }
 
-                // "Best for Personal Use" + Guest button
+                // Social buttons
                 VStack(spacing: 10) {
-                    Text("Best for Personal Use")
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundColor(Color(white: 0.6))
-                        .tracking(0.3)
-
-                    SignInButton(
-                        title: "Continue as Guest",
-                        icon: "person.fill",
-                        tint: Color(red: 0.39, green: 0.45, blue: 0.55)
-                    ) {
-                        auth.loginAsGuest()
-                    }
-                    .disabled(auth.isLoading)
-                }
-                .padding(.horizontal, 24)
-
-                // Divider
-                HStack {
-                    Rectangle().fill(Color(white: 0.88)).frame(height: 1)
-                    Text("OR")
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundColor(Color(white: 0.6))
-                        .padding(.horizontal, 12)
-                    Rectangle().fill(Color(white: 0.88)).frame(height: 1)
-                }
-                .padding(.horizontal, 24)
-                .padding(.vertical, 20)
-
-                // "Best for Teams Working Together" + Social buttons
-                VStack(spacing: 10) {
-                    Text("Best for Teams Working Together")
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundColor(Color(white: 0.6))
-                        .tracking(0.3)
-
                     SignInButton(
                         title: "Continue with Apple",
                         icon: "apple.logo",

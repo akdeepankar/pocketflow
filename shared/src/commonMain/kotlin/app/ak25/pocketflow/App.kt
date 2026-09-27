@@ -180,9 +180,6 @@ fun App() {
                         // Android — open the Supabase OAuth URL, result handled in handleOAuthResult
                         uriHandler.openUri(authViewModel.getAppleOAuthUrl())
                     }
-                },
-                onGuestClick = {
-                    authViewModel.loginAsGuest()
                 }
             )
         } else if (currentScreen == Screen.HOME || currentScreen == Screen.SETTINGS || currentScreen == Screen.ASSETS) {

@@ -83,35 +83,11 @@ private val GoogleIcon: ImageVector
         }
     }.build()
 
-private val GuestIcon: ImageVector
-    get() = ImageVector.Builder(
-        name = "Guest",
-        defaultWidth = 24.dp,
-        defaultHeight = 24.dp,
-        viewportWidth = 24f,
-        viewportHeight = 24f
-    ).path(fill = SolidColor(Color(0xFF64748B))) {
-        moveTo(12.0f, 12.0f)
-        curveTo(14.21f, 12.0f, 16.0f, 10.21f, 16.0f, 8.0f)
-        curveTo(16.0f, 5.79f, 14.21f, 4.0f, 12.0f, 4.0f)
-        curveTo(9.79f, 4.0f, 8.0f, 5.79f, 8.0f, 8.0f)
-        curveTo(8.0f, 10.21f, 9.79f, 12.0f, 12.0f, 12.0f)
-        close()
-        moveTo(12.0f, 14.0f)
-        curveTo(9.33f, 14.0f, 4.0f, 15.34f, 4.0f, 18.0f)
-        verticalLineTo(20.0f)
-        horizontalLineTo(20.0f)
-        verticalLineTo(18.0f)
-        curveTo(20.0f, 15.34f, 14.67f, 14.0f, 12.0f, 14.0f)
-        close()
-    }.build()
-
 @Composable
 fun LoginScreen(
     viewModel: SharedAuthViewModel,
     onGoogleSignInClick: () -> Unit = {},
-    onAppleSignInClick: () -> Unit = {},
-    onGuestClick: () -> Unit = {}
+    onAppleSignInClick: () -> Unit = {}
 ) {
     Column(
         modifier = Modifier
@@ -179,80 +155,6 @@ fun LoginScreen(
                 .padding(bottom = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // "Best for Personal Use" -> Guest
-            Text(
-                text = "Best for Personal Use",
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Medium,
-                letterSpacing = 0.2.sp,
-                color = Color(0xFF94A3B8),
-                textAlign = TextAlign.Center
-            )
-            Spacer(modifier = Modifier.height(10.dp))
-
-            OutlinedButton(
-                onClick = { onGuestClick() },
-                enabled = !viewModel.isLoading,
-                shape = RoundedCornerShape(14.dp),
-                border = BorderStroke(1.dp, Color(0xFFCBD5E1)),
-                colors = ButtonDefaults.outlinedButtonColors(
-                    containerColor = Color(0xFFF7F9FC),
-                    contentColor = Color(0xFF64748B)
-                ),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(50.dp)
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.Center
-                ) {
-                    Icon(
-                        imageVector = GuestIcon,
-                        contentDescription = "Guest Icon",
-                        tint = Color(0xFF64748B),
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = "Continue as Guest",
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = Color(0xFF64748B)
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Divider / Or
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Divider(modifier = Modifier.weight(1f), color = Color(0xFFE2E8F0))
-                Text(
-                    text = "OR",
-                    fontSize = 11.sp,
-                    color = Color(0xFF94A3B8),
-                    modifier = Modifier.padding(horizontal = 12.dp)
-                )
-                Divider(modifier = Modifier.weight(1f), color = Color(0xFFE2E8F0))
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // "Best for Teams Working Together" -> Social
-            Text(
-                text = "Best for Teams Working Together",
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Medium,
-                letterSpacing = 0.2.sp,
-                color = Color(0xFF94A3B8),
-                textAlign = TextAlign.Center
-            )
-            Spacer(modifier = Modifier.height(10.dp))
-
             // Google Sign-In Button
             OutlinedButton(
                 onClick = { onGoogleSignInClick() },
