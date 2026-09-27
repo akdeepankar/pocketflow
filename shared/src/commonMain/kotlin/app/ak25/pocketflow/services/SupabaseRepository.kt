@@ -16,8 +16,10 @@ import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import app.ak25.pocketflow.utils.getCurrentTimeMillis
 import kotlinx.serialization.Serializable
@@ -110,6 +112,28 @@ object SupabaseRepository {
         }
     }
 
+    fun isAuthError(e: Throwable): Boolean {
+        val msg = e.message ?: ""
+        return msg.contains("JWT expired", ignoreCase = true) ||
+               msg.contains("token is expired", ignoreCase = true) ||
+               msg.contains("invalid JWT", ignoreCase = true) ||
+               msg.contains("invalid claim: exp", ignoreCase = true) ||
+               msg.contains("Invalid Refresh Token", ignoreCase = true) ||
+               msg.contains("refresh_token_not_found", ignoreCase = true) ||
+               msg.contains("401", ignoreCase = true) ||
+               msg.contains("Unauthorized", ignoreCase = true) ||
+               msg.contains("User from sub claim in JWT does not exist", ignoreCase = true)
+    }
+
+    fun handleAuthErrorIfPresent(e: Throwable) {
+        if (isAuthError(e)) {
+            println("[Supabase] Auth error detected: ${e.message}. Triggering signOut...")
+            kotlinx.coroutines.CoroutineScope(Dispatchers.Main).launch {
+                app.ak25.pocketflow.ui.auth.SharedAuthViewModel.signOut()
+            }
+        }
+    }
+
     internal fun refreshJwtBlocking(): String {
         return try {
             kotlinx.coroutines.runBlocking {
@@ -124,6 +148,7 @@ object SupabaseRepository {
             }
         } catch (e: Exception) {
             println("[Supabase] JWT refresh exception: ${e.message}")
+            handleAuthErrorIfPresent(e)
             ""
         }
     }
@@ -151,6 +176,7 @@ object SupabaseRepository {
             list.map { it.toCore() }
         } catch (e: Exception) {
             println("[Supabase] fetchWorkflows exception: ${e.message}")
+            handleAuthErrorIfPresent(e)
             null
         }
     }
@@ -168,6 +194,7 @@ object SupabaseRepository {
             doc?.toCore()
         } catch (e: Exception) {
             println("[Supabase] fetchWorkflowById exception: ${e.message}")
+            handleAuthErrorIfPresent(e)
             null
         }
     }
@@ -230,6 +257,7 @@ object SupabaseRepository {
             }
         } catch (e: Exception) {
             println("[Supabase] ❌ upsertWorkflow exception: ${e.message}")
+            handleAuthErrorIfPresent(e)
             e.printStackTrace()
         }
     }
@@ -245,6 +273,7 @@ object SupabaseRepository {
             println("[Supabase] ✅ Deleted workflow $workflowId")
         } catch (e: Exception) {
             println("[Supabase] deleteWorkflow exception: ${e.message}")
+            handleAuthErrorIfPresent(e)
         }
     }
 
@@ -330,6 +359,7 @@ object SupabaseRepository {
             }
         } catch (e: Exception) {
             println("[Supabase] invokeRunwayFunction exception: ${e.message}")
+            handleAuthErrorIfPresent(e)
             null
         }
     }

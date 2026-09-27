@@ -58,17 +58,10 @@ object SharedAuthViewModel {
         val sessionId = LocalStorage.loadString("supabase_session_id") ?: LocalStorage.loadString("appwrite_session_id") ?: ""
         val isGuest = LocalStorage.loadString("is_guest") == "true"
 
-        isLoggedIn = jwt.isNotEmpty() || sessionId.isNotEmpty() || isGuest
+        isLoggedIn = (jwt.isNotEmpty() || sessionId.isNotEmpty()) && !isGuest
         userName = LocalStorage.loadString("user_name") ?: ""
         userEmail = LocalStorage.loadString("user_email") ?: ""
         LocalStorage.saveString("sign_out_requested", "")
-
-        if (!isLoggedIn && AuthBridgeHolder.current == null && !getPlatform().name.contains("iOS", ignoreCase = true)) {
-            setGuestState(true)
-            LocalStorage.saveString("user_name", "Guest")
-            isLoggedIn = true
-        }
-
 
         if (jwt.isNotEmpty() || sessionId.isNotEmpty()) {
             refreshAccountInfo()
@@ -81,6 +74,13 @@ object SharedAuthViewModel {
                 val localJwt = LocalStorage.loadString("supabase_jwt") ?: LocalStorage.loadString("appwrite_jwt") ?: ""
                 val localRefresh = LocalStorage.loadString("supabase_session_id") ?: LocalStorage.loadString("appwrite_session_id") ?: ""
                 
+                if (localJwt.isEmpty() && localRefresh.isEmpty()) {
+                    if (LocalStorage.loadString("is_guest") != "true") {
+                        signOut()
+                    }
+                    return@launch
+                }
+
                 var session = supabaseClient.auth.currentSessionOrNull()
                 if (session == null && localJwt.isNotEmpty()) {
                     try {
@@ -98,36 +98,78 @@ object SharedAuthViewModel {
                         println("[AuthViewModel] importSession failed: ${e.message}")
                     }
                 }
+
+                // If JWT is expired, attempt to refresh session
+                val isExpired = session?.accessToken?.let { SupabaseRepository.jwtExpired(it) } ?: SupabaseRepository.jwtExpired(localJwt)
+                if (isExpired) {
+                    println("[AuthViewModel] JWT is expired, attempting refreshCurrentSession...")
+                    try {
+                        supabaseClient.auth.refreshCurrentSession()
+                        session = supabaseClient.auth.currentSessionOrNull()
+                    } catch (e: Exception) {
+                        println("[AuthViewModel] refreshCurrentSession failed on expired JWT: ${e.message}")
+                        session = null
+                    }
+                }
+
+                var user = session?.user
+                if (session != null) {
+                    try {
+                        user = supabaseClient.auth.retrieveUser(session.accessToken)
+                    } catch (e: Exception) {
+                        println("[AuthViewModel] retrieveUser failed: ${e.message}")
+                        // Attempt token refresh recovery if retrieveUser failed
+                        try {
+                            supabaseClient.auth.refreshCurrentSession()
+                            session = supabaseClient.auth.currentSessionOrNull()
+                            if (session != null) {
+                                user = supabaseClient.auth.retrieveUser(session.accessToken)
+                            }
+                        } catch (re: Exception) {
+                            println("[AuthViewModel] Recovery refresh also failed: ${re.message}")
+                            session = null
+                            user = null
+                        }
+                    }
+                }
+
+                if (session == null || user == null) {
+                    println("[AuthViewModel] ❌ User session invalid or token expired and refresh failed. Triggering signOut.")
+                    signOut()
+                    return@launch
+                }
+
+                val token = session.accessToken
+                val userId = user.id
+                val email = user.email ?: ""
+                val meta = user.userMetadata
+                val name = meta?.get("full_name")?.jsonPrimitive?.contentOrNull
+                    ?: meta?.get("name")?.jsonPrimitive?.contentOrNull
+                    ?: ""
                 
-                val user = session?.user ?: supabaseClient.auth.currentUserOrNull()
-                if (session != null && user != null) {
-                    val token = session.accessToken
-                    val userId = user.id
-                    val email = user.email ?: ""
-                    val meta = user.userMetadata
-                    val name = meta?.get("name")?.jsonPrimitive?.contentOrNull ?: ""
-                    
-                    LocalStorage.saveString("supabase_jwt", token)
-                    LocalStorage.saveString("supabase_session_id", session.refreshToken)
-                    LocalStorage.saveString("supabase_user_id", userId)
-                    LocalStorage.saveString("appwrite_jwt", token)
-                    LocalStorage.saveString("appwrite_session_id", session.refreshToken)
-                    LocalStorage.saveString("appwrite_user_id", userId)
-                    LocalStorage.saveString("user_email", email)
-                    app.ak25.pocketflow.platform.AndroidAuthBridge.onOneSignalLogin?.invoke(userId)
-                    
-                    withContext(Dispatchers.Main) {
-                        userEmail = email
-                    }
-                    val finalName = name.ifEmpty { email.substringBefore("@") }
-                    LocalStorage.saveString("user_name", finalName)
-                    withContext(Dispatchers.Main) {
-                        userName = finalName
-                        isLoggedIn = true
-                    }
+                LocalStorage.saveString("supabase_jwt", token)
+                LocalStorage.saveString("supabase_session_id", session.refreshToken ?: localRefresh)
+                LocalStorage.saveString("supabase_user_id", userId)
+                LocalStorage.saveString("appwrite_jwt", token)
+                LocalStorage.saveString("appwrite_session_id", session.refreshToken ?: localRefresh)
+                LocalStorage.saveString("appwrite_user_id", userId)
+                LocalStorage.saveString("user_email", email)
+                app.ak25.pocketflow.platform.AndroidAuthBridge.onOneSignalLogin?.invoke(userId)
+                
+                withContext(Dispatchers.Main) {
+                    userEmail = email
+                }
+                val finalName = name.ifEmpty { email.substringBefore("@") }
+                LocalStorage.saveString("user_name", finalName)
+                withContext(Dispatchers.Main) {
+                    userName = finalName
+                    isLoggedIn = true
                 }
             } catch (e: Exception) {
                 println("[AuthViewModel] refreshAccountInfo error: ${e.message}")
+                if (SupabaseRepository.isAuthError(e)) {
+                    signOut()
+                }
             }
         }
     }

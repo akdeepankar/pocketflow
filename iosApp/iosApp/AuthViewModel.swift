@@ -160,9 +160,14 @@ class AuthViewModel: ObservableObject {
         // RootView doesn't fire immediately on launch.
         clearSignOutFlag()
 
-        if isLoggedIn && !userId.isEmpty {
-            OneSignalManager.shared.login(userId: userId)
+        if isLoggedIn {
+            if !userId.isEmpty {
+                OneSignalManager.shared.login(userId: userId)
+            }
             startSignOutPolling()
+            Task { @MainActor in
+                await self.checkSessionStatus()
+            }
         }
     }
 
@@ -461,6 +466,119 @@ class AuthViewModel: ObservableObject {
         } catch {
             errorMessage = "Network error: \(error.localizedDescription)"
             return nil
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // MARK: - JWT Expiration & Session Refresh
+    // ─────────────────────────────────────────────────────────────────────────
+
+    func isJwtExpired(token: String) -> Bool {
+        guard !token.isEmpty else { return true }
+        let parts = token.components(separatedBy: ".")
+        guard parts.count >= 2 else { return true }
+        var payload = parts[1]
+        let remainder = payload.count % 4
+        if remainder > 0 {
+            payload += String(repeating: "=", count: 4 - remainder)
+        }
+        guard let data = Data(base64Encoded: payload, options: .ignoreUnknownCharacters),
+              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let exp = json["exp"] as? TimeInterval else {
+            return true
+        }
+        let now = Date().timeIntervalSince1970
+        return exp < (now + 60) // Expired if less than 60s remaining
+    }
+
+    func refreshSession() async -> Bool {
+        let refreshToken = defaults.string(forKey: "supabase_session_id") ?? defaults.string(forKey: "appwrite_session_id") ?? ""
+        guard !refreshToken.isEmpty else { return false }
+        guard let url = URL(string: "\(endpoint)/auth/v1/token?grant_type=refresh_token") else { return false }
+        var req = URLRequest(url: url)
+        req.httpMethod = "POST"
+        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        req.setValue(apiKey, forHTTPHeaderField: "apikey")
+        req.httpBody = try? JSONSerialization.data(withJSONObject: [
+            "refresh_token": refreshToken
+        ])
+
+        do {
+            let (data, response) = try await urlSession.data(for: req)
+            guard let http = response as? HTTPURLResponse, (http.statusCode == 200 || http.statusCode == 201) else {
+                return false
+            }
+            guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                  let accessToken = json["access_token"] as? String, !accessToken.isEmpty else {
+                return false
+            }
+            let newRefreshToken = json["refresh_token"] as? String ?? refreshToken
+            let userObj = json["user"] as? [String: Any]
+            let id = userObj?["id"] as? String ?? defaults.string(forKey: "supabase_user_id") ?? ""
+            let email = userObj?["email"] as? String ?? defaults.string(forKey: "user_email") ?? ""
+            let meta = userObj?["user_metadata"] as? [String: Any]
+            let name = meta?["full_name"] as? String ?? meta?["name"] as? String ?? defaults.string(forKey: "user_name") ?? ""
+
+            defaults.set(accessToken, forKey: "supabase_jwt")
+            defaults.set(accessToken, forKey: "appwrite_jwt")
+            defaults.set(newRefreshToken, forKey: "supabase_session_id")
+            defaults.set(newRefreshToken, forKey: "appwrite_session_id")
+            if !id.isEmpty {
+                defaults.set(id, forKey: "supabase_user_id")
+                defaults.set(id, forKey: "appwrite_user_id")
+            }
+            if !name.isEmpty {
+                defaults.set(name, forKey: "user_name")
+            }
+            if !email.isEmpty {
+                defaults.set(email, forKey: "user_email")
+            }
+            defaults.synchronize()
+            print("[Auth] ✅ Session refreshed successfully on iOS")
+            return true
+        } catch {
+            print("[Auth] ❌ Session refresh failed on iOS: \(error)")
+            return false
+        }
+    }
+
+    func checkSessionStatus() async {
+        let jwt = defaults.string(forKey: "supabase_jwt") ?? defaults.string(forKey: "appwrite_jwt") ?? ""
+        if jwt.isEmpty || isJwtExpired(token: jwt) {
+            print("[Auth] JWT is missing or expired. Attempting token refresh...")
+            let refreshed = await refreshSession()
+            if !refreshed {
+                print("[Auth] ❌ Session could not be refreshed. Logging out...")
+                await signOut()
+                return
+            }
+        }
+
+        // Test fetching account with current / refreshed token
+        let currentJwt = defaults.string(forKey: "supabase_jwt") ?? defaults.string(forKey: "appwrite_jwt") ?? ""
+        if let (userId, fetchedName) = await fetchAccount(jwt: currentJwt) {
+            if !userId.isEmpty {
+                defaults.set(userId, forKey: "supabase_user_id")
+                defaults.set(userId, forKey: "appwrite_user_id")
+            }
+            if !fetchedName.isEmpty {
+                defaults.set(fetchedName, forKey: "user_name")
+            }
+            defaults.synchronize()
+        } else {
+            // fetchAccount failed (likely 401 or invalid token), try refreshing once
+            print("[Auth] fetchAccount failed with token, trying refreshSession...")
+            let refreshed = await refreshSession()
+            if refreshed {
+                let newJwt = defaults.string(forKey: "supabase_jwt") ?? defaults.string(forKey: "appwrite_jwt") ?? ""
+                if await fetchAccount(jwt: newJwt) == nil {
+                    print("[Auth] ❌ fetchAccount still failed after refresh. Logging out...")
+                    await signOut()
+                }
+            } else {
+                print("[Auth] ❌ Session expired and refresh failed. Logging out...")
+                await signOut()
+            }
         }
     }
 
