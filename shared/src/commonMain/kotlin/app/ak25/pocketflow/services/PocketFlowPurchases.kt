@@ -86,6 +86,37 @@ object PocketFlowPurchases {
 
     fun saveMockCreditsBalance(balance: Int) {
         app.ak25.pocketflow.storage.LocalStorage.saveString("mock_credits_balance", balance.toString())
+        evaluateCreditBalanceTriggers(balance)
+    }
+
+    fun evaluateCreditBalanceTriggers(balance: Int?) {
+        if (balance == null) return
+        val balanceStr = balance.toString()
+        app.ak25.pocketflow.platform.OneSignalBridgeHolder.addTrigger("credits_balance", balanceStr)
+        app.ak25.pocketflow.platform.OneSignalBridgeHolder.addTag("credits_balance", balanceStr)
+
+        if (balance < 50) {
+            println("""
+            [OneSignal-IAM] ══════════════════════════════════════════════════
+            [OneSignal-IAM] ⚠️ Low Credits Trigger Satisfied (balance = $balance < 50)!
+            [OneSignal-IAM] Setting Trigger: 'credits_less_than_50' = 'true'
+            [OneSignal-IAM] Setting Trigger: 'low_credits' = 'true'
+            [OneSignal-IAM] Setting Trigger: 'credits_low' = 'true'
+            [OneSignal-IAM] Setting Trigger: 'action' = 'low_credits'
+            [OneSignal-IAM] Setting Tag: 'has_low_credits' = 'true'
+            [OneSignal-IAM] ══════════════════════════════════════════════════
+            """.trimIndent())
+            app.ak25.pocketflow.platform.OneSignalBridgeHolder.addTrigger("credits_less_than_50", "true")
+            app.ak25.pocketflow.platform.OneSignalBridgeHolder.addTrigger("low_credits", "true")
+            app.ak25.pocketflow.platform.OneSignalBridgeHolder.addTrigger("credits_low", "true")
+            app.ak25.pocketflow.platform.OneSignalBridgeHolder.addTrigger("action", "low_credits")
+            app.ak25.pocketflow.platform.OneSignalBridgeHolder.addTag("has_low_credits", "true")
+        } else {
+            app.ak25.pocketflow.platform.OneSignalBridgeHolder.removeTrigger("credits_less_than_50")
+            app.ak25.pocketflow.platform.OneSignalBridgeHolder.removeTrigger("low_credits")
+            app.ak25.pocketflow.platform.OneSignalBridgeHolder.removeTrigger("credits_low")
+            app.ak25.pocketflow.platform.OneSignalBridgeHolder.addTag("has_low_credits", "false")
+        }
     }
 
     fun purchaseMockCredits(amount: Int) {
@@ -127,6 +158,9 @@ object PocketFlowPurchases {
         if (isMockModeEnabled()) {
             setMockModeEnabled(true)
         }
+        
+        // Evaluate initial credits trigger
+        evaluateCreditBalanceTriggers(getAvailableCreditsBalance())
     }
 
     private fun ensureConfigured() {
@@ -277,6 +311,7 @@ object PocketFlowPurchases {
                 },
                 onSuccess = { currencies: VirtualCurrencies ->
                     _virtualCurrencies.value = currencies
+                    evaluateCreditBalanceTriggers(getAvailableCreditsBalance(currencies))
                     continuation.resume(currencies)
                 }
             )
