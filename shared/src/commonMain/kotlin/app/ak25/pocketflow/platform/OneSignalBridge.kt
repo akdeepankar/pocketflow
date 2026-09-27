@@ -26,9 +26,11 @@ object OneSignalBridgeHolder {
 
     fun addTrigger(key: String, value: String) {
         pendingTriggers[key] = value
+        pendingTags[key] = value
         val bridge = current
         if (bridge != null) {
             bridge.addTrigger(key, value)
+            bridge.addTag(key, value)
         } else {
             println("[OneSignal-Bridge] ⏳ Bridge not ready yet, cached trigger '$key' = '$value'")
         }
@@ -42,9 +44,11 @@ object OneSignalBridgeHolder {
 
     fun addTag(key: String, value: String) {
         pendingTags[key] = value
+        pendingTriggers[key] = value
         val bridge = current
         if (bridge != null) {
             bridge.addTag(key, value)
+            bridge.addTrigger(key, value)
         } else {
             println("[OneSignal-Bridge] ⏳ Bridge not ready yet, cached tag '$key' = '$value'")
         }
