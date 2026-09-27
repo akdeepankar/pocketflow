@@ -9,6 +9,9 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Track active job per Live Activity ID across poller instances
+const activeJobs = new Map<string, string>();
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -46,6 +49,11 @@ Deno.serve(async (req: Request) => {
   }
 
   console.log(`[poll-job] 🎯 Received job for Live Activity polling: jobId=${jobId}, provider=${provider}`);
+
+  // Register this job as the active job for this Live Activity ID
+  if (liveActivity?.activityId) {
+    activeJobs.set(liveActivity.activityId, jobId);
+  }
 
   // Helper to send Live Activity remote updates to OneSignal
   const sendLiveActivityEvent = async (
@@ -211,14 +219,12 @@ Deno.serve(async (req: Request) => {
 
     const isSuccess = status === "SUCCEEDED";
     const isLastStep = currentStep >= totalSteps;
+    let takenOver = false;
 
     // 1. Send OneSignal Live Activity Update or End Event
-    //    Only "end" the Live Activity if this is the last step in the workflow
-    //    or if the task failed. For intermediate steps, send "update" so the
-    //    activity persists for the next node.
     if (activityId) {
       if (isSuccess && !isLastStep) {
-        // Intermediate step succeeded — update (don't end) so activity persists
+        // Intermediate step succeeded — update status
         const stepDoneText = totalSteps > 1
           ? `Step ${currentStep}/${totalSteps}: ${nodeTitle} Completed ✓`
           : `${nodeTitle} Completed! ✓`;
@@ -237,8 +243,40 @@ Deno.serve(async (req: Request) => {
           isSuccess: true,
           timestamp: Date.now() / 1000,
         });
+
+        // Wait up to 20 seconds to see if the next step's poller takes over.
+        // If the app was closed/killed, no next step will start.
+        console.log(`[poll-job] ⏳ Waiting up to 20s for next step takeoff on activityId=${activityId}...`);
+        for (let check = 0; check < 20; check++) {
+          await new Promise((resolve) => setTimeout(resolve, 1000));
+          if (activeJobs.get(activityId) !== jobId) {
+            takenOver = true;
+            console.log(`[poll-job] ⏩ Next step took over for activityId=${activityId}. Exiting previous poller.`);
+            break;
+          }
+        }
+
+        if (!takenOver) {
+          // App was closed — no next step started within 20s.
+          // Cleanly end the Live Activity so it doesn't freeze on the lock screen.
+          console.log(`[poll-job] ⏱️ No next step started within 20s for activityId=${activityId} (App closed). Ending Live Activity.`);
+          await sendLiveActivityEvent(activityId, "end", {
+            status: `Step ${currentStep}/${totalSteps} Completed ✓`,
+            nodeTitle,
+            workflowName,
+            currentStep,
+            totalSteps,
+            completedSteps: currentStep,
+            stepNodeTypes,
+            currentNodeType: nodeType,
+            progress: currentStep / totalSteps,
+            isFinished: true,
+            isSuccess: true,
+            timestamp: Date.now() / 1000,
+          });
+        }
       } else {
-        // Final step succeeded OR any step failed — end the activity
+        // Final step succeeded OR any step failed — end the activity immediately
         const finalStatusText = isSuccess
           ? (totalSteps > 1 ? `All ${totalSteps} nodes completed! ✓` : `${nodeTitle} Completed! ✓`)
           : (errorMessage || "Generation Failed");
@@ -260,10 +298,17 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    // 2. Send Push Notification to target user (only on final step or failure)
-    if ((isLastStep || !isSuccess) && recipientUserId && recipientUserId.trim().length > 0 && oneSignalRestKey) {
+    // 2. Send Push Notification to target user (on final step, failure, or when app closed mid-workflow)
+    if ((isLastStep || !isSuccess || !takenOver) && recipientUserId && recipientUserId.trim().length > 0 && oneSignalRestKey) {
       try {
         console.log(`[poll-job] 🔔 Sending push notification to user: ${recipientUserId}`);
+        const pushHeading = isSuccess
+          ? (isLastStep ? `Workflow Complete (${workflowName})` : `Step ${currentStep}/${totalSteps} Complete (${workflowName})`)
+          : `Generation Failed (${workflowName})`;
+        const pushContent = isSuccess
+          ? (isLastStep ? `All ${totalSteps} nodes finished generating!` : `${nodeTitle} finished generating! (App closed)`)
+          : `${nodeTitle} failed to generate.`;
+
         const pushRes = await fetch("https://onesignal.com/api/v1/notifications", {
           method: "POST",
           headers: {
@@ -277,10 +322,10 @@ Deno.serve(async (req: Request) => {
               external_id: [recipientUserId.trim()],
             },
             headings: {
-              en: isSuccess ? `Generation Complete (${workflowName})` : `Generation Failed (${workflowName})`,
+              en: pushHeading,
             },
             contents: {
-              en: isSuccess ? `${nodeTitle} finished generating!` : `${nodeTitle} failed to generate.`,
+              en: pushContent,
             },
             data: {
               workflow_id: liveActivity?.workflowId || "",
