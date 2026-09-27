@@ -165,6 +165,7 @@ class RunwayService {
                 val json = response.body<JsonObject>()
                 json["id"]?.jsonPrimitive?.content?.let { id ->
                     onTaskIdGenerated?.invoke(id)
+                    triggerLiveActivityPolling(id)
                 }
                 return json
             } else {
