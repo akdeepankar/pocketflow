@@ -401,20 +401,30 @@ class WorkflowController {
         )
         // Fire explicit triggers for newly created workflow
         scope.launch(Dispatchers.Main) {
-            // Short delay to allow screen transition to complete before popup display
-            delay(400)
-            println("[OneSignal-IAM] 🎯 Firing 'workflow_created', 'new_workflow_created', and 'action' triggers")
-            app.ak25.pocketflow.platform.OneSignalBridgeHolder.removeTrigger("workflow_created")
-            app.ak25.pocketflow.platform.OneSignalBridgeHolder.removeTrigger("new_workflow_created")
-            app.ak25.pocketflow.platform.OneSignalBridgeHolder.removeTrigger("action")
-            
-            app.ak25.pocketflow.platform.OneSignalBridgeHolder.addTrigger("workflow_created", "true")
-            app.ak25.pocketflow.platform.OneSignalBridgeHolder.addTrigger("new_workflow_created", "true")
-            app.ak25.pocketflow.platform.OneSignalBridgeHolder.addTrigger("action", "workflow_created")
-            app.ak25.pocketflow.platform.OneSignalBridgeHolder.addTag("last_action", "workflow_created")
+            val count = updated.size
+            val countStr = count.toString()
 
-            updateWorkflowCountTriggers(updated.size)
+            // 1st Pulse (after short screen transition)
+            delay(500)
+            println("[OneSignal-IAM] 🎯 [Pulse 1] Firing workflow creation triggers (count=$count)")
+            dispatchWorkflowCreationTriggers(count, countStr)
+
+            // 2nd Pulse (ensures iOS UIKit has finished full view hierarchy presentation & keyboard dismiss)
+            delay(1000)
+            println("[OneSignal-IAM] 🎯 [Pulse 2] Re-evaluating workflow creation triggers (count=$count)")
+            dispatchWorkflowCreationTriggers(count, countStr)
         }
+    }
+
+    private fun dispatchWorkflowCreationTriggers(count: Int, countStr: String) {
+        app.ak25.pocketflow.platform.OneSignalBridgeHolder.addTrigger("workflow_created", "true")
+        app.ak25.pocketflow.platform.OneSignalBridgeHolder.addTrigger("new_workflow_created", "true")
+        app.ak25.pocketflow.platform.OneSignalBridgeHolder.addTrigger("create_workflow", "true")
+        app.ak25.pocketflow.platform.OneSignalBridgeHolder.addTrigger("action", "workflow_created")
+        app.ak25.pocketflow.platform.OneSignalBridgeHolder.addTrigger("event", "workflow_created")
+        app.ak25.pocketflow.platform.OneSignalBridgeHolder.addTag("last_action", "workflow_created")
+
+        updateWorkflowCountTriggers(count)
     }
 
     private fun updateWorkflowCountTriggers(count: Int) {
