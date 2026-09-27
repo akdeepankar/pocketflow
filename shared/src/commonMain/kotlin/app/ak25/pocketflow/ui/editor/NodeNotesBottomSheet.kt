@@ -48,8 +48,14 @@ fun NodeNotesBottomSheet(
 
     val workflow by controller.currentWorkflow.collectAsState()
     val node = workflow?.nodes?.find { it.id == nodeId }
-
     val (nodeColor, nodeIcon) = getNodeTheme(node?.type ?: NodeType.TEXT_PROMPT)
+    val notes = node?.notes?.toList().orEmpty().sortedBy { it.createdAt }
+
+    LaunchedEffect(notes.size) {
+        if (notes.isNotEmpty()) {
+            listState.animateScrollToItem(notes.size - 1)
+        }
+    }
 
     ModalBottomSheet(
         onDismissRequest = onDismissRequest,
@@ -71,7 +77,9 @@ fun NodeNotesBottomSheet(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(start = 20.dp, end = 20.dp, bottom = 28.dp)
+                .navigationBarsPadding()
+                .imePadding()
+                .padding(start = 20.dp, end = 20.dp, bottom = 16.dp)
         ) {
             // Header
             Row(
@@ -142,7 +150,6 @@ fun NodeNotesBottomSheet(
             Spacer(Modifier.height(14.dp))
 
             // Message List / Empty State
-            val notes = node?.notes?.toList().orEmpty().sortedBy { it.createdAt }
             if (notes.isEmpty()) {
                 Box(
                     modifier = Modifier
@@ -184,7 +191,8 @@ fun NodeNotesBottomSheet(
                     state = listState,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .heightIn(min = 120.dp, max = 340.dp),
+                        .weight(1f, fill = false)
+                        .heightIn(max = 360.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     items(notes, key = { it.id }) { note ->

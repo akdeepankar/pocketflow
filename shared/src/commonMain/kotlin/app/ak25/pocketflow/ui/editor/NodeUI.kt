@@ -265,19 +265,11 @@ fun NodeUI(
                                     Box(
                                         modifier = Modifier
                                             .align(Alignment.TopEnd)
-                                            .offset(x = 6.dp, y = (-6).dp)
+                                            .offset(x = 3.dp, y = (-3).dp)
+                                            .size(7.dp)
                                             .clip(CircleShape)
                                             .background(Color(0xFF007AFF))
-                                            .padding(horizontal = 4.dp, vertical = 0.5.dp),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Text(
-                                            text = if (noteCount > 9) "9+" else "$noteCount",
-                                            color = Color.White,
-                                            fontSize = 8.5.sp,
-                                            fontWeight = FontWeight.Black
-                                        )
-                                    }
+                                    )
                                 }
                             }
                         }
