@@ -706,6 +706,23 @@ class ExecutionEngine(private val controller: WorkflowController) {
                 } catch (e: Exception) {}
             }
 
+            // If user is authenticated on Supabase, delegate full workflow execution to the cloud!
+            // This guarantees all nodes run sequentially on Supabase servers, updating Live Activity
+            // and database state even if the app is completely closed.
+            val hasJwt = !app.ak25.pocketflow.storage.LocalStorage.loadString("supabase_jwt").isNullOrEmpty()
+                    || !app.ak25.pocketflow.storage.LocalStorage.loadString("appwrite_jwt").isNullOrEmpty()
+
+            if (hasJwt) {
+                val cloudStarted = SupabaseRepository.executeWorkflowInCloud(
+                    workflow = workflow,
+                    activityId = workflow.id
+                )
+                if (cloudStarted) {
+                    println("[ExecutionEngine] 🚀 Workflow offloaded to Supabase Edge Function! App can be safely closed.")
+                    return true
+                }
+            }
+
             var completedCount = 0
             for (nodeId in nodesToRun) {
                 if (cancelled) {

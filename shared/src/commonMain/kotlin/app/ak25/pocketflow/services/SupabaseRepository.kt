@@ -380,6 +380,38 @@ object SupabaseRepository {
         }
     }
 
+    /**
+     * Launch multi-node workflow execution in the cloud via the `execute-workflow` Supabase Edge Function.
+     * This allows the entire workflow (Node 1 -> Node 2 -> Node 3) to execute on Supabase servers,
+     * updating Live Activity and database state even if the app is closed.
+     */
+    suspend fun executeWorkflowInCloud(
+        workflow: Workflow,
+        activityId: String? = null,
+        recipientUserId: String? = null
+    ): Boolean = withContext(Dispatchers.IO) {
+        try {
+            val workflowJson = json.encodeToJsonElement(workflow)
+            val body = buildJsonObject {
+                put("workflow", workflowJson)
+                val uid = recipientUserId ?: userId()
+                if (uid.isNotBlank()) {
+                    put("recipientUserId", uid)
+                }
+                if (!activityId.isNullOrEmpty()) {
+                    put("activityId", activityId)
+                }
+            }
+            println("[Supabase] 🚀 Invoking execute-workflow Edge Function for workflow: ${workflow.name} (${workflow.id})")
+            val response = supabaseClient.functions.invoke("execute-workflow", body)
+            println("[Supabase] 🚀 execute-workflow status: ${response.status.value}")
+            response.status.value in 200..299
+        } catch (e: Exception) {
+            println("[Supabase] ❌ executeWorkflowInCloud exception: ${e.message}")
+            false
+        }
+    }
+
     suspend fun pollLiveActivityJob(
         jobId: String,
         provider: String = "runway",
