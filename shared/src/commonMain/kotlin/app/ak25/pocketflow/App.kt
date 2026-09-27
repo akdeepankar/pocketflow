@@ -36,7 +36,7 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.pager.HorizontalPager
 
 enum class Screen {
-    HOME, ASSETS, EDITOR, SETTINGS, PAYWALL, RATES, ACTIVITY
+    HOME, ASSETS, EDITOR, SETTINGS, RATES, ACTIVITY
 }
 
 private val MinimalLightTheme = lightColorScheme(
@@ -88,9 +88,9 @@ fun App() {
     }
     
     var currentScreen by remember { mutableStateOf(Screen.HOME) }
-    var previousScreen by remember { mutableStateOf(Screen.HOME) }
     val pagerState = rememberPagerState(initialPage = 0, pageCount = { 3 })
     var isPaywallOpen by remember { mutableStateOf(false) }
+    var showAppPaywall by remember { mutableStateOf(false) }
 
     var showOnboarding by remember {
         mutableStateOf(app.ak25.pocketflow.storage.LocalStorage.loadString("onboarding_completed") != "true")
@@ -132,10 +132,7 @@ fun App() {
         val target = pendingDeepLink ?: return@LaunchedEffect
         println("[App] 🚀 Routing Deep Link: workflowId=${target.workflowId}, nodeId=${target.nodeId}, type=${target.type}, openPaywall=${target.openPaywall}")
         if (target.openPaywall) {
-            if (currentScreen != Screen.PAYWALL) {
-                previousScreen = currentScreen
-            }
-            currentScreen = Screen.PAYWALL
+            showAppPaywall = true
             app.ak25.pocketflow.domain.DeepLinkRouter.clearPendingDeepLink()
             return@LaunchedEffect
         }
@@ -204,10 +201,7 @@ fun App() {
                             backgroundScope = appScope,
                             onNavigateToEditor = { currentScreen = Screen.EDITOR },
                             onNavigateToSettings = { currentScreen = Screen.SETTINGS },
-                            onNavigateToPaywall = {
-                                previousScreen = currentScreen
-                                currentScreen = Screen.PAYWALL
-                            },
+                            onNavigateToPaywall = { showAppPaywall = true },
                             onPaywallStateChanged = { isPaywallOpen = it },
                             onSignOut = {
                                 controller.clearLocalWorkflows()
@@ -225,10 +219,7 @@ fun App() {
                         )
                         2 -> SettingsScreen(
                             onBack = { currentScreen = Screen.HOME },
-                            onNavigateToPaywall = {
-                                previousScreen = currentScreen
-                                currentScreen = Screen.PAYWALL
-                            },
+                            onNavigateToPaywall = { showAppPaywall = true },
                             onNavigateToRates = { currentScreen = Screen.RATES },
                             onNavigateToActivity = { currentScreen = Screen.ACTIVITY },
                             onShowOnboarding = { showOnboarding = true }
@@ -237,7 +228,7 @@ fun App() {
                 }
 
                 // Modern floating bottom navigation bar with transparent backside and reduced top spacing padding
-                if (!isPaywallOpen && !isAssetPreviewOpen) {
+                if (!isPaywallOpen && !isAssetPreviewOpen && !showAppPaywall) {
                     Box(
                         modifier = Modifier
                             .align(Alignment.BottomCenter)
@@ -371,11 +362,6 @@ fun App() {
                         onBack = { currentScreen = Screen.HOME }
                     )
                 }
-                Screen.PAYWALL -> {
-                    PaywallScreen(
-                        onDismiss = { currentScreen = previousScreen }
-                    )
-                }
                 Screen.RATES -> {
                     app.ak25.pocketflow.ui.settings.ManageRatesScreen(
                         onBack = { currentScreen = Screen.SETTINGS }
@@ -388,6 +374,15 @@ fun App() {
                 }
                 else -> {}
             }
+        }
+
+        if (showAppPaywall) {
+            PaywallScreen(
+                onDismiss = {
+                    showAppPaywall = false
+                    app.ak25.pocketflow.services.PocketFlowPurchases.refreshVirtualCurrenciesAfterCreditChange()
+                }
+            )
         }
     }
 }
