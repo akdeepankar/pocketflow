@@ -125,17 +125,24 @@ fun App() {
         }
     }
 
-    // Observe push notification deep links
+    // Observe push notification and in-app message deep links
     val pendingDeepLink by app.ak25.pocketflow.domain.DeepLinkRouter.pendingDeepLink.collectAsState()
     LaunchedEffect(pendingDeepLink) {
         val target = pendingDeepLink ?: return@LaunchedEffect
-        println("[App] 🚀 Routing Deep Link: workflowId=${target.workflowId}, nodeId=${target.nodeId}, type=${target.type}")
-        controller.loadWorkflow(target.workflowId)
-        if (!target.nodeId.isNullOrEmpty()) {
-            val isNote = target.type == "node_note"
-            controller.focusNode(target.nodeId, isNote = isNote)
+        println("[App] 🚀 Routing Deep Link: workflowId=${target.workflowId}, nodeId=${target.nodeId}, type=${target.type}, openPaywall=${target.openPaywall}")
+        if (target.openPaywall) {
+            currentScreen = Screen.PAYWALL
+            app.ak25.pocketflow.domain.DeepLinkRouter.clearPendingDeepLink()
+            return@LaunchedEffect
         }
-        currentScreen = Screen.EDITOR
+        if (!target.workflowId.isNullOrEmpty()) {
+            controller.loadWorkflow(target.workflowId)
+            if (!target.nodeId.isNullOrEmpty()) {
+                val isNote = target.type == "node_note"
+                controller.focusNode(target.nodeId, isNote = isNote)
+            }
+            currentScreen = Screen.EDITOR
+        }
         app.ak25.pocketflow.domain.DeepLinkRouter.clearPendingDeepLink()
     }
 

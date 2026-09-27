@@ -84,7 +84,21 @@ class MainActivity : ComponentActivity() {
 
         OneSignal.InAppMessages.addClickListener(object : com.onesignal.inAppMessages.IInAppMessageClickListener {
             override fun onClick(event: com.onesignal.inAppMessages.IInAppMessageClickEvent) {
-                println("[OneSignal-IAM-Android] 👆 In-App Message clicked: actionId=${event.result.actionId}, urlTarget=${event.result.urlTarget}")
+                val actionId = event.result.actionId.orEmpty()
+                val urlTarget = event.result.urlTarget?.toString().orEmpty()
+                println("[OneSignal-IAM-Android] 👆 In-App Message clicked: actionId=$actionId, urlTarget=$urlTarget")
+
+                val shouldOpenPaywall = actionId.contains("paywall", ignoreCase = true) ||
+                    actionId.contains("recharge", ignoreCase = true) ||
+                    actionId.contains("credit", ignoreCase = true) ||
+                    actionId.contains("buy", ignoreCase = true) ||
+                    urlTarget.contains("paywall", ignoreCase = true)
+
+                if (shouldOpenPaywall) {
+                    runOnUiThread {
+                        app.ak25.pocketflow.domain.DeepLinkRouter.openPaywall()
+                    }
+                }
             }
         })
 
