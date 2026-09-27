@@ -201,9 +201,11 @@
 				TargetAttributes = {
 					37BF2E2E3068001B0010B71E = {
 						CreatedOnToolsVersion = 26.6;
+						DevelopmentTeam = WPGR2YT685;
 					};
 					4AB3CF0F42A97CA37E97723D = {
 						CreatedOnToolsVersion = 16.2;
+						DevelopmentTeam = WPGR2YT685;
 						SystemCapabilities = {
 							com.apple.Push = {
 								enabled = 1;
